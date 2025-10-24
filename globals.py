@@ -6,7 +6,7 @@ import urllib.request
 from . import util
 
 def exit_exec():
-    if not tkinter.messagebox.askquestion("退出", "你确认要退出吗？"):
+    if tkinter.messagebox.askquestion("退出", "你确认要退出吗？") != tkinter.messagebox.YES:
         return
     
     root.destroy()

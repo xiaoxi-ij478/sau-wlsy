@@ -1,4 +1,5 @@
 import io
+import os.path
 import tkinter
 import tkinter.ttk
 import urllib.parse
@@ -28,7 +29,11 @@ def login(*args):
             notify_info.set("密码错误")
             return
 
-        page_iter = iter(io.TextIOWrapper(globals_module.opener.open("https://wlsy.sau.edu.cn/physlab/s6.php")))
+        page_iter = iter(
+            io.TextIOWrapper(
+                globals_module.opener.open("https://wlsy.sau.edu.cn/physlab/s6.php")
+            )
+        )
         real_username = username.get()
         while True:
             try:
@@ -63,13 +68,24 @@ password = tkinter.StringVar(login_toplevel)
 password_label = tkinter.ttk.Label(login_toplevel, text="密码")
 password_input = tkinter.ttk.Entry(login_toplevel, textvariable=password, show='*')
 
+try:
+    with open(os.path.join(os.path.expanduser("~"), ".wlsyrc")) as f:
+        username.set(f.readline().strip())
+        password.set(f.readline().strip())
+except (FileNotFoundError, PermissionError, OSError):
+    pass
+
 notify_info = tkinter.StringVar(login_toplevel)
-notify_label = tkinter.ttk.Label(login_toplevel, textvariable=notify_info)
+notify_label = tkinter.ttk.Label(
+    login_toplevel,
+    textvariable=notify_info,
+    anchor=tkinter.CENTER
+)
 
 login_button = tkinter.ttk.Button(
     login_toplevel,
     text="登录",
-    command=lambda: login_toplevel.after(5, login),
+    command=login,
     default=tkinter.ACTIVE
 )
 
@@ -77,11 +93,11 @@ username_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10)
 username_input.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 password_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10)
 password_input.grid(row=1, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-notify_label.grid(row=2, column=0, columnspan=2, sticky=tkinter.NS, padx=10, pady=10)
+notify_label.grid(row=2, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 login_button.grid(row=3, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 login_toplevel.columnconfigure(tkinter.ALL, weight=1)
 login_toplevel.rowconfigure(tkinter.ALL, weight=1)
 
-login_toplevel.bind("<Return>", lambda: login_toplevel.after(5, login))
+login_toplevel.bind("<Return>", login)
 
 globals_module.login_activate.add(login_toplevel.wm_deiconify)

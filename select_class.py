@@ -12,33 +12,7 @@ from . import class_filters
 from . import globals as globals_module
 from . import util
 
-class TimeTuple:
-    def __init__(self, week, day_of_week, class_time):
-        self.week = week
-        self.day_of_week = day_of_week
-        self.class_time = class_time
-
-    def __repr__(self):
-        return f"TimeTuple({self.week}, {self.day_of_week}, {self.class_time})"
-
-class AvailableClass:
-    def __init__(self, name, time, teacher, place, exp_post_id):
-        self.name = name
-        self.time = time
-        self.teacher = teacher
-        self.place = place
-        self.exp_post_id = exp_post_id
-        self.is_available = True
-
-    def __repr__(self):
-        return (
-            f"AvailableClass("
-            f"{self.name}, {self.time}, {self.teacher}, {self.place}, "
-            f"{self.exp_post_id}, {self.is_available}"
-            f")"
-        )
-
-class TkAvailableClass(AvailableClass):
+class TkAvailableClass(util.AvailableClass):
     def __init__(self, name, time, teacher, place, exp_post_id, frame):
         super().__init__(name, time, teacher, place, exp_post_id)
         self.__is_available = True
@@ -97,13 +71,16 @@ class TkAvailableClass(AvailableClass):
 
         self.name_label.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
         self.info_label.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
-        self.select_button.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
+        self.commit_button.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
 
 # fragile HTML parser for experiment class selection page
 class ExpSelectPageHTMLParser(html.parser.HTMLParser):
+    _NULL_SENTINEL = object()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.parsed_at_least_one_class = False
         self.passed_name_tag = False
         self.parsed_extra_info = False
         self.in_name_tag = False
@@ -121,14 +98,15 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
         if (
             self.in_exp_data_tag and
             tag == "input" and
-            attrs["type"] == "radio" and
-            attrs["name"] == "sy_sy" and
-            attrs["class"] == "body"
+            attrs.get("type", self._NULL_SENTINEL) == "radio" and
+            attrs.get("name", self._NULL_SENTINEL) == "sy_sy" and
+            attrs.get("class", self._NULL_SENTINEL) == "body"
         ):
             if self.passed_name_tag:
+                self.parsed_extra_info = False
                 self.passed_name_tag = False
                 self.parsed_classes.append(
-                    AvailableClass(
+                    util.AvailableClass(
                         self.current_name,
                         self.current_time,
                         self.current_teacher,
@@ -136,30 +114,34 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
                         self.current_exp_post_id
                     )
                 )
+
+            self.parsed_at_least_one_class = True
             self.current_exp_post_id = int(attrs["value"])
 
-        if self.in_exp_data_tag and tag == "font":
+        if tag == "font" and self.in_exp_data_tag:
             self.in_name_tag = True
 
         if (
             tag == "form" and
-            attrs["method"].lower() == "post" and
-            attrs["action"] == "stuyy_test2.php"
+            attrs.get("method", self._NULL_SENTINEL).lower() == "post" and
+            attrs.get("action", self._NULL_SENTINEL) == "stuyy_test2.php"
         ):
             self.in_exp_data_tag = True
 
     def handle_endtag(self, tag):
         if tag == "form" and self.in_exp_data_tag:
             self.in_exp_data_tag = False
-            self.parsed_classes.append(
-                AvailableClass(
-                    self.current_name,
-                    self.current_time,
-                    self.current_teacher,
-                    self.current_place,
-                    self.current_exp_post_id
+
+            if self.parsed_at_least_one_class:
+                self.parsed_classes.append(
+                    util.AvailableClass(
+                        self.current_name,
+                        self.current_time,
+                        self.current_teacher,
+                        self.current_place,
+                        self.current_exp_post_id
+                    )
                 )
-            )
 
         if tag == "font" and self.in_name_tag:
             self.in_name_tag = False
@@ -177,7 +159,7 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
 
             l = [i.strip() for i in data.split('\xA0') if i.strip()]
             self.current_teacher = l[0].replace("教师：", '')
-            self.current_time = TimeTuple(*l[1].replace("时间：", '').split(' - '))
+            self.current_time = util.TimeTuple(*l[1].replace("时间：", '').split(' -'))
             self.current_place = l[2].replace("地点：", '')
 
 def set_all_unavailable():
@@ -198,10 +180,16 @@ def add_filter(aclass):
     filters.append(aclass)
 
 def exec_filter():
-    set_all_unavailable()
+    set_all_available()
+    filtered_classes = []
+
     for f in filters:
-        for c in filter(f, available_classes):
-            c.is_available = True
+        for c in filter(lambda i: not f(i), available_classes):
+            if c not in filtered_classes:
+                filtered_classes.append(c)
+
+    for c in filtered_classes:
+        c.is_available = False
 
 def filter_class_pressed():
     filename = tkinter.filedialog.askopenfilename(
@@ -219,19 +207,19 @@ def filter_class_pressed():
         class_filters.read_class_csv(filename)
         exec_filter()
 
-def filter_teacher_updated():
+def filter_teacher_updated(*args):
     with util.HoldContextManager(select_class_toplevel):
-        class_filters.allowed_teachers = filter_teacher.get().split(',，')
+        class_filters.allowed_teachers = list(filter(bool, filter_teacher.get().split(',，')))
         exec_filter()
 
-def filter_not_teacher_updated():
+def filter_not_teacher_updated(*args):
     with util.HoldContextManager(select_class_toplevel):
-        class_filters.refused_teachers = filter_not_teacher.get().split(',，')
+        class_filters.refused_teachers = list(filter(bool, filter_not_teacher.get().split(',，')))
         exec_filter()
 
-def filter_keyword_updated():
+def filter_keyword_updated(*args):
     with util.HoldContextManager(select_class_toplevel):
-        class_filters.filter_keyword = filter_keyword.get().split(',，')
+        class_filters.filter_keyword = list(filter(bool, filter_keyword.get().split(',，')))
         exec_filter()
 
 def reload():
@@ -256,8 +244,10 @@ def reload():
         page_frames.clear()
         available_classes.clear()
 
-        if not len(parser.parsed_classes):
+        if not parser.parsed_classes:
             no_class_info_label.grid()
+            class_list_frame.rowconfigure(tkinter.ALL, weight=1)
+            class_list_frame.columnconfigure(tkinter.ALL, weight=1)
             return
 
         a, b = divmod(len(parser.parsed_classes), ITEMS_PRE_PAGE)
@@ -320,8 +310,8 @@ def prev_page():
     paginator_indicator.set(f"{current_page} / {total_pages} 页")
 
 add_filter(class_filters.filter_refused_times)
-add_filter(class_filters.filter_refused_teacher)
 add_filter(class_filters.filter_allowed_teacher)
+add_filter(class_filters.filter_refused_teacher)
 add_filter(class_filters.filter_keyword)
 
 select_class_toplevel = tkinter.Toplevel(globals_module.root)
@@ -360,7 +350,7 @@ filter_not_teacher = tkinter.StringVar(select_class_toplevel)
 filter_not_teacher_label = tkinter.ttk.Label(
     select_class_toplevel,
     text="输入你不想要的老师，以逗号分隔\n"
-         "（如果也同时填写了想要的老师，则以想要的老师进行过滤）"
+         "（可同时与想要的老师一起使用）"
 )
 filter_not_teacher_entry = tkinter.ttk.Entry(
     select_class_toplevel,
@@ -381,33 +371,38 @@ refresh_button = tkinter.ttk.Button(select_class_toplevel, text="刷新", comman
 
 class_list_frame = tkinter.ttk.Frame(select_class_toplevel)
 
-no_class_info_label = tkinter.ttk.Label(class_list_frame, text="当前没有课程")
+no_class_info_label = tkinter.ttk.Label(
+    class_list_frame,
+    text="当前没有课程",
+    anchor=tkinter.CENTER
+)
 
 paginator_frame = tkinter.ttk.Frame(select_class_toplevel)
 paginator_indicator = tkinter.StringVar(paginator_frame, "1 / 1 页")
 paginator_left_button = tkinter.ttk.Button(paginator_frame, text="<")
 paginator_indicator_label = tkinter.ttk.Label(
     paginator_frame,
-    textvariable=paginator_indicator
+    textvariable=paginator_indicator,
+    anchor=tkinter.CENTER
 )
 paginator_right_button = tkinter.ttk.Button(paginator_frame, text=">")
 
 filter_class_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-filter_class_button.grid(row=0, column=1, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+filter_class_button.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_teacher_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-filter_teacher_entry.grid(row=1, column=1, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+filter_teacher_entry.grid(row=1, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_not_teacher_label.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-filter_not_teacher_entry.grid(row=2, column=1, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+filter_not_teacher_entry.grid(row=2, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_keyword_label.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-filter_keyword_entry.grid(row=3, column=1, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
-refresh_button.grid(row=4, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
-class_list_frame.grid(row=5, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
+filter_keyword_entry.grid(row=3, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
+refresh_button.grid(row=4, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+class_list_frame.grid(row=5, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 no_class_info_label.grid(row=0, column=0, sticky=tkinter.NSEW)
 no_class_info_label.grid_remove()
 paginator_left_button.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_indicator_label.grid(row=0, column=1, sticky=tkinter.NS, padx=10, pady=10)
+paginator_indicator_label.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 paginator_right_button.grid(row=0, column=2, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_frame.grid(row=6, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
+paginator_frame.grid(row=6, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 paginator_frame.rowconfigure(tkinter.ALL, weight=1)
 paginator_frame.columnconfigure(tkinter.ALL, weight=1)
 select_class_toplevel.rowconfigure(tkinter.ALL, weight=1)

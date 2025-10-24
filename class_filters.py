@@ -70,25 +70,29 @@ def read_class_csv(filename):
     filter_class_label_str.set("选择课程表过滤课程（已加载）")
 
 def filter_refused_times(aclass):
-    return aclass.time not in refused_times
+    return aclass.time not in refused_times if refused_times else True
 
 ## Refused Teachers Part ##
 
 refused_teachers = []
 
 def filter_refused_teacher(aclass):
-    return aclass.teacher not in refused_teachers
+    return aclass.teacher not in refused_teachers if refused_teachers else True
 
 ## Allowed Teachers Part ##
 
 allowed_teachers = []
 
 def filter_allowed_teacher(aclass):
-    return aclass.teacher in allowed_teachers
+    return aclass.teacher in allowed_teachers if allowed_teachers else True
 
 ## Keyword Part ##
 
-allowed_keywords = []
+filter_keyword = []
 
 def filter_keyword(aclass):
-    return any(keyword in aclass.name for keyword in allowed_keywords)
+    return (
+        any(keyword in aclass.name for keyword in filter_keyword)
+        if filter_keyword
+        else True
+    )
