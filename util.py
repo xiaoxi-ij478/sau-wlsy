@@ -1,3 +1,6 @@
+import contextlib
+import dataclasses
+
 class CallbackCaller:
     def __init__(self):
         self.callbacks = []
@@ -10,7 +13,7 @@ class CallbackCaller:
         self.callbacks.append(callback)
 
 # a context manager to get rid of busy_hold() / busy_forget() pattern
-class HoldContextManager:
+class HoldWindowContext:
     def __init__(self, window):
         self.window = window
 
@@ -18,63 +21,42 @@ class HoldContextManager:
         self.window.busy_hold()
         self.window.update() # so that cursor can be updated
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, *args):
         self.window.busy_forget()
         self.window.update() # ditto
 
+@dataclasses.dataclass
 class TimeTuple:
-    def __init__(self, week, day_of_week, class_time):
-        self.week = week
-        self.day_of_week = day_of_week
-        self.class_time = class_time
+    week: int
+    day_of_week: int
+    class_time: int
 
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}("
-                f"{self.week!r}, "
-                f"{self.day_of_week!r}, "
-                f"{self.class_time!r}"
-            f")"
-        )
+@dataclasses.dataclass
+class ExpClass:
+    name: str
+    time: TimeTuple
+    teacher: str
+    place: str | None
+    seat_num: int | None
+    score: int | None
+    report_download_link: str | None
 
-class AvailableClass:
-    def __init__(self, name, time, teacher, place, exp_post_id):
-        self.name = name
-        self.time = time
-        self.teacher = teacher
-        self.place = place
-        self.exp_post_id = exp_post_id
-        self.is_available = True
+@dataclasses.dataclass
+class AvailableClass(ExpClass):
+    exp_post_id: int
+    is_available: bool = dataclasses.field(default=True, init=False)
 
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}("
-                f"{self.name!r}, "
-                f"{self.time!r}, "
-                f"{self.teacher!r},"
-                f"{self.place!r}, "
-                f"{self.exp_post_id!r}, "
-                f"{self.is_available!r}"
-            f")"
-        )
+# only used for merging results from ExpViewHTMLParser and ExpScoreHTMLParser
+def merge_score_only_expclass(score_only, real):
+    assert score_only.name == real.name
+    assert score_only.teacher == real.teacher
 
-class ChosenClass:
-    def __init__(self, name, time, teacher, place, seat_num, report_download_link):
-        self.name = name
-        self.time = time
-        self.teacher = teacher
-        self.place = place
-        self.seat_num = seat_num
-        self.report_download_link = report_download_link
-
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}("
-                f"{self.name!r}, "
-                f"{self.time!r}, "
-                f"{self.teacher!r}, "
-                f"{self.place!r}, "
-                f"{self.seat_num!r}, "
-                f"{self.report_download_link!r}"
-            f")"
-        )
+    return ExpClass(
+        score_only.name,
+        real.time,
+        score_only.teacher,
+        real.place,
+        real.seat_num,
+        score_only.score,
+        real.report_download_link
+    )

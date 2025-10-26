@@ -1,3 +1,4 @@
+import contextlib
 import io
 import os.path
 import tkinter
@@ -9,7 +10,7 @@ from . import globals as globals_module
 from . import util
 
 def login(*args):
-    with util.HoldContextManager(login_toplevel):
+    with util.HoldWindowContext(login_toplevel):
         notify_info.set("")
 
         reply = globals_module.opener.open(
@@ -68,12 +69,10 @@ password = tkinter.StringVar(login_toplevel)
 password_label = tkinter.ttk.Label(login_toplevel, text="密码")
 password_input = tkinter.ttk.Entry(login_toplevel, textvariable=password, show='*')
 
-try:
+with contextlib.suppress(FileNotFoundError, PermissionError, OSError):
     with open(os.path.join(os.path.expanduser("~"), ".wlsyrc")) as f:
         username.set(f.readline().strip())
         password.set(f.readline().strip())
-except (FileNotFoundError, PermissionError, OSError):
-    pass
 
 notify_info = tkinter.StringVar(login_toplevel)
 notify_label = tkinter.ttk.Label(

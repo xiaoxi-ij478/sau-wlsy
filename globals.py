@@ -8,7 +8,7 @@ from . import util
 def exit_exec():
     if tkinter.messagebox.askquestion("退出", "你确认要退出吗？") != tkinter.messagebox.YES:
         return
-    
+
     root.destroy()
 
 logon_user = ""

@@ -1,7 +1,7 @@
 import dataclasses
-import html.parser
 import io
 import itertools
+import textwrap
 import tkinter
 import tkinter.filedialog
 import tkinter.messagebox
@@ -10,20 +10,53 @@ import tkinter.ttk
 from . import about
 from . import class_filters
 from . import globals as globals_module
+from . import html_parsers
 from . import util
 
+@dataclasses.dataclass
 class TkAvailableClass(util.AvailableClass):
-    def __init__(self, name, time, teacher, place, exp_post_id, frame):
-        super().__init__(name, time, teacher, place, exp_post_id)
-        self.__is_available = True
+    frame: dataclasses.InitVar[tkinter.ttk.Frame]
+    name_label: tkinter.ttk.Label
+    info_label: tkinter.ttk.Label
+    commit_button: tkinter.ttk.Button
 
+    # __is_available is just a internal variable storing real "is_available" value
+    # so do not declare it in the class body
+
+    @property
+    def is_available(self):
+        return self.__is_available
+
+    @is_available.setter
+    def is_available(self, val):
+        self.__is_available = val
+
+        try:
+            self.name_label
+        except AttributeError: # still in __init__()
+            return
+
+        self.name_label.configure(
+            state=tkinter.NORMAL if val else tkinter.DISABLED
+        )
+        self.info_label.configure(
+            state=tkinter.NORMAL if val else tkinter.DISABLED
+        )
+        self.commit_button.configure(
+            state=tkinter.NORMAL if val else tkinter.DISABLED
+        )
+
+    def __post_init__(self, frame):
         self.name_label = tkinter.ttk.Label(frame, text=name)
         self.info_label = tkinter.ttk.Label(
             frame,
-            text=
-                f"老师：{teacher}\n"
-                f"节数：第 {time.week} 周星期 {time.day_of_week} 第 {time.class_time} 节\n"
-                f"位置：{place}"
+            text=textwrap.dedent(
+            f"""\
+    老师：{self.teacher}
+    节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
+    位置：{self.place}\
+"""
+            )
         )
         self.commit_button = tkinter.ttk.Button(
             frame,
@@ -33,7 +66,14 @@ class TkAvailableClass(util.AvailableClass):
 
         self.name_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
         self.info_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-        self.commit_button.grid(row=0, column=1, rowspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+        self.commit_button.grid(
+            row=0,
+            column=1,
+            rowspan=2,
+            sticky=tkinter.EW,
+            padx=10,
+            pady=10
+        )
         frame.rowconfigure(tkinter.ALL, weight=1)
         frame.columnconfigure(tkinter.ALL, weight=1)
 
@@ -55,112 +95,6 @@ class TkAvailableClass(util.AvailableClass):
         )
 
         # TODO
-
-    @property
-    def is_available(self) -> bool:
-        return self.__is_available
-
-    @is_available.setter
-    def is_available(self, val):
-        self.__is_available = val
-
-        try:
-            self.name_label
-        except AttributeError: # in __init__()
-            return
-
-        self.name_label.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
-        self.info_label.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
-        self.commit_button.configure(state=tkinter.NORMAL if val else tkinter.DISABLED)
-
-# fragile HTML parser for experiment class selection page
-class ExpSelectPageHTMLParser(html.parser.HTMLParser):
-    _NULL_SENTINEL = object()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.parsed_at_least_one_class = False
-        self.passed_name_tag = False
-        self.parsed_extra_info = False
-        self.in_name_tag = False
-        self.in_exp_data_tag = False
-        self.current_name = ""
-        self.current_time = None
-        self.current_teacher = ""
-        self.current_place = ""
-        self.current_exp_post_id = 0
-        self.parsed_classes = []
-
-    def handle_starttag(self, tag, attrs):
-        attrs = dict(attrs)
-
-        if (
-            self.in_exp_data_tag and
-            tag == "input" and
-            attrs.get("type", self._NULL_SENTINEL) == "radio" and
-            attrs.get("name", self._NULL_SENTINEL) == "sy_sy" and
-            attrs.get("class", self._NULL_SENTINEL) == "body"
-        ):
-            if self.passed_name_tag:
-                self.parsed_extra_info = False
-                self.passed_name_tag = False
-                self.parsed_classes.append(
-                    util.AvailableClass(
-                        self.current_name,
-                        self.current_time,
-                        self.current_teacher,
-                        self.current_place,
-                        self.current_exp_post_id
-                    )
-                )
-
-            self.parsed_at_least_one_class = True
-            self.current_exp_post_id = int(attrs["value"])
-
-        if tag == "font" and self.in_exp_data_tag:
-            self.in_name_tag = True
-
-        if (
-            tag == "form" and
-            attrs.get("method", self._NULL_SENTINEL).lower() == "post" and
-            attrs.get("action", self._NULL_SENTINEL) == "stuyy_test2.php"
-        ):
-            self.in_exp_data_tag = True
-
-    def handle_endtag(self, tag):
-        if tag == "form" and self.in_exp_data_tag:
-            self.in_exp_data_tag = False
-
-            if self.parsed_at_least_one_class:
-                self.parsed_classes.append(
-                    util.AvailableClass(
-                        self.current_name,
-                        self.current_time,
-                        self.current_teacher,
-                        self.current_place,
-                        self.current_exp_post_id
-                    )
-                )
-
-        if tag == "font" and self.in_name_tag:
-            self.in_name_tag = False
-            self.passed_name_tag = True
-
-    def handle_data(self, data):
-        if not self.in_exp_data_tag:
-            return
-
-        if self.in_name_tag:
-            self.current_name = data
-
-        if self.passed_name_tag and not self.parsed_extra_info:
-            self.parsed_extra_info = True
-
-            l = [i.strip() for i in data.split('\xA0') if i.strip()]
-            self.current_teacher = l[0].replace("教师：", '')
-            self.current_time = util.TimeTuple(*l[1].replace("时间：", '').split(' -'))
-            self.current_place = l[2].replace("地点：", '')
 
 def set_all_unavailable():
     for c in available_classes:
@@ -192,40 +126,55 @@ def exec_filter():
         c.is_available = False
 
 def filter_class_pressed():
-    filename = tkinter.filedialog.askopenfilename(
-        parent=select_class_toplevel,
-        title="选择课程表文件",
-        filetypes=[
-            ("CSV 文件", "*.csv")
-        ]
-    )
+    with util.HoldWindowContext(select_class_toplevel):
+        filename = tkinter.filedialog.askopenfilename(
+            parent=select_class_toplevel,
+            title="选择课程表文件",
+            filetypes=[
+                ("CSV 文件", "*.csv")
+            ]
+        )
 
-    if not filename:
-        return
+        if not filename:
+            return
 
-    with util.HoldContextManager(select_class_toplevel):
         class_filters.read_class_csv(filename)
         exec_filter()
 
 def filter_teacher_updated(*args):
-    with util.HoldContextManager(select_class_toplevel):
-        class_filters.allowed_teachers = list(filter(bool, filter_teacher.get().split(',，')))
+    with util.HoldWindowContext(select_class_toplevel):
+        class_filters.allowed_teachers = list(
+            filter(
+                bool,
+                filter_teacher.get().split(',，')
+            )
+        )
         exec_filter()
 
 def filter_not_teacher_updated(*args):
-    with util.HoldContextManager(select_class_toplevel):
-        class_filters.refused_teachers = list(filter(bool, filter_not_teacher.get().split(',，')))
+    with util.HoldWindowContext(select_class_toplevel):
+        class_filters.refused_teachers = list(
+            filter(
+                bool,
+                filter_not_teacher.get().split(',，')
+            )
+        )
         exec_filter()
 
 def filter_keyword_updated(*args):
-    with util.HoldContextManager(select_class_toplevel):
-        class_filters.filter_keyword = list(filter(bool, filter_keyword.get().split(',，')))
+    with util.HoldWindowContext(select_class_toplevel):
+        class_filters.filter_keyword = list(
+            filter(
+                bool,
+                filter_keyword.get().split(',，')
+            )
+        )
         exec_filter()
 
 def reload():
-    global pages
+    with util.HoldWindowContext(select_class_toplevel):
+        global pages
 
-    with util.HoldContextManager(select_class_toplevel):
         no_class_info_label.grid_remove()
 
         reply = io.TextIOWrapper(
@@ -233,8 +182,7 @@ def reload():
                 "https://wlsy.sau.edu.cn/physlab/stuyy_test2.php"
             )
         )
-
-        parser = ExpSelectPageHTMLParser()
+        parser = html_parsers.ExpSelectPageHTMLParser()
         while buffer := reply.read(1024):
             parser.feed(buffer)
 
@@ -260,7 +208,13 @@ def reload():
 
             for i, c in enumerate(it):
                 class_item_frame = tkinter.ttk.Frame(internal_class_frame)
-                class_item_frame.grid(row=i, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+                class_item_frame.grid(
+                    row=i,
+                    column=0,
+                    sticky=tkinter.NSEW,
+                    padx=10,
+                    pady=10
+                )
 
                 available_classes.append(
                     TkAvailableClass(
@@ -288,8 +242,8 @@ ITEMS_PRE_PAGE = 6
 current_page = 1
 total_pages = 1
 filters = []
-available_classes: list[TkAvailableClass] = []
-page_frames: list[tkinter.ttk.Frame] = []
+available_classes = []
+page_frames = []
 
 def next_page():
     if current_page >= total_pages:
@@ -321,11 +275,17 @@ select_class_toplevel.wm_protocol("WM_DELETE_WINDOW", globals_module.exit_func)
 
 select_class_menu = tkinter.Menu(select_class_toplevel, tearoff=False)
 select_class_menu.add_command(label="退出", command=globals_module.exit_func)
-select_class_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
+select_class_menu.add_command(
+    label="关于",
+    command=about.about_toplevel.wm_deiconify
+)
 
 select_class_toplevel.configure(menu=select_class_menu)
 
-filter_class_label_str = tkinter.StringVar(select_class_toplevel, "选择课程表来过滤课程")
+filter_class_label_str = tkinter.StringVar(
+    select_class_toplevel,
+    "选择课程表来过滤课程"
+)
 filter_class_label = tkinter.ttk.Label(
     select_class_toplevel,
     textvariable=filter_class_label_str
@@ -367,7 +327,11 @@ filter_keyword_entry = tkinter.ttk.Entry(
     textvariable=filter_keyword
 )
 
-refresh_button = tkinter.ttk.Button(select_class_toplevel, text="刷新", command=reload)
+refresh_button = tkinter.ttk.Button(
+    select_class_toplevel,
+    text="刷新",
+    command=reload
+)
 
 class_list_frame = tkinter.ttk.Frame(select_class_toplevel)
 

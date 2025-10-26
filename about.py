@@ -18,7 +18,7 @@ about_author = tkinter.ttk.Label(
 )
 about_homepage = tkinter.ttk.Label(
     about_toplevel,
-    text="项目主页：https://github.com/xiaoxi-ij478/..."
+    text="项目主页：https://github.com/xiaoxi-ij478/sau-wlsy"
 )
 about_close = tkinter.ttk.Button(
     about_toplevel,

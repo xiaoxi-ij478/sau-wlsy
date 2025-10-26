@@ -67,7 +67,7 @@ def read_class_csv(filename):
                         refused_times.append(TimeTuple(int(i[1]), int(i[2]), week))
 
     tkinter.messagebox.showinfo("加载完成", "课程表加载完成")
-    filter_class_label_str.set("选择课程表过滤课程（已加载）")
+    filter_class_label_str.set("选择课程表来过滤课程（已加载）")
 
 def filter_refused_times(aclass):
     return aclass.time not in refused_times if refused_times else True
