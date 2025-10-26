@@ -16,9 +16,9 @@ from . import util
 @dataclasses.dataclass
 class TkAvailableClass(util.AvailableClass):
     frame: dataclasses.InitVar[tkinter.ttk.Frame]
-    name_label: tkinter.ttk.Label
-    info_label: tkinter.ttk.Label
-    commit_button: tkinter.ttk.Button
+    name_label: tkinter.ttk.Label = dataclasses.field(init=False, repr=False, compare=False)
+    info_label: tkinter.ttk.Label = dataclasses.field(init=False, repr=False, compare=False)
+    commit_button: tkinter.ttk.Button = dataclasses.field(init=False, repr=False, compare=False)
 
     # __is_available is just a internal variable storing real "is_available" value
     # so do not declare it in the class body
