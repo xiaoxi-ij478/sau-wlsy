@@ -1,5 +1,9 @@
 import csv
 import itertools
+import tkinter.messagebox
+
+from . import globals as globals_module
+from . import util
 
 ## Refused Time Part ##
 
@@ -31,7 +35,9 @@ def read_class_csv(filename):
         for i in reader:
             for j in i[6].split('、'):
                 if '-' not in j:
-                    refused_times.append(TimeTuple(int(i[1]), int(i[2]), int(i[6])))
+                    refused_times.append(
+                        util.TimeTuple(int(i[1]), int(i[2]), int(i[6]))
+                    )
 
                 else:
                     if j.count('-') != 1:
@@ -64,10 +70,12 @@ def read_class_csv(filename):
                         step = 2
 
                     for week in range(begin, end, step):
-                        refused_times.append(TimeTuple(int(i[1]), int(i[2]), week))
+                        refused_times.append(
+                            util.TimeTuple(int(i[1]), int(i[2]), week)
+                        )
 
     tkinter.messagebox.showinfo("加载完成", "课程表加载完成")
-    filter_class_label_str.set("选择课程表来过滤课程（已加载）")
+    globals_module.timetable_done()
 
 def filter_refused_times(aclass):
     return aclass.time not in refused_times if refused_times else True
@@ -88,11 +96,11 @@ def filter_allowed_teacher(aclass):
 
 ## Keyword Part ##
 
-filter_keyword = []
+filtered_keyword = []
 
 def filter_keyword(aclass):
     return (
-        any(keyword in aclass.name for keyword in filter_keyword)
-        if filter_keyword
+        any(keyword in aclass.name for keyword in filtered_keyword)
+        if filtered_keyword
         else True
     )

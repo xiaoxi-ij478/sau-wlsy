@@ -3,10 +3,11 @@ import html.parser
 
 from . import util
 
-# parser for https://wlsy.sau.edu.cn/physlab/stuyy_test2.php
-class ExpSelectPageHTMLParser(html.parser.HTMLParser):
-    _NULL_SENTINEL = object()
+# all the parsers are very fragile.
+# DO NOT EXPECT THEM TO BE STABLE
 
+class ExpSelectPageHTMLParser(html.parser.HTMLParser):
+    "parser for https://wlsy.sau.edu.cn/physlab/stuyy_test2.php"
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -19,7 +20,7 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
         self.current_time = None
         self.current_teacher = ""
         self.current_place = ""
-        self.current_exp_post_id = 0
+        self.current_post_id = 0
         self.parsed_classes = []
 
     def _append_class(self):
@@ -29,13 +30,9 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
                 self.current_time,
                 self.current_teacher,
                 self.current_place,
-                None,
-                None,
-                None,
-                self.current_exp_post_id
+                self.current_post_id
             )
         )
-
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -43,9 +40,9 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
         if (
             self.in_exp_data_tag and
             tag == "input" and
-            attrs.get("type", self._NULL_SENTINEL) == "radio" and
-            attrs.get("name", self._NULL_SENTINEL) == "sy_sy" and
-            attrs.get("class", self._NULL_SENTINEL) == "body"
+            attrs.get("type", None) == "radio" and
+            attrs.get("name", None) == "sy_sy" and
+            attrs.get("class", None) == "body"
         ):
             if self.passed_name_tag:
                 self.parsed_extra_info = False
@@ -53,15 +50,14 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
                 self._append_class()
 
             self.parsed_at_least_one_class = True
-            self.current_exp_post_id = int(attrs["value"])
+            self.current_post_id = int(attrs["value"])
 
         if tag == "font" and self.in_exp_data_tag:
             self.in_name_tag = True
 
         if (
             tag == "form" and
-            attrs.get("method", self._NULL_SENTINEL).lower() == "post" and
-            attrs.get("action", self._NULL_SENTINEL) == "stuyy_test2.php"
+            attrs == {"method": "POST", "action": "stuyy_test2.php"}
         ):
             self.in_exp_data_tag = True
 
@@ -106,10 +102,8 @@ class ExpViewHTMLParseStage(enum.IntEnum):
     def next_stage(self):
         return type(self)(self + 1)
 
-# parser for https://wlsy.sau.edu.cn/physlab/stuyycx.php
 class ExpViewHTMLParser(html.parser.HTMLParser):
-    _NULL_SENTINEL = object()
-
+    "parser for https://wlsy.sau.edu.cn/physlab/stuyycx.php"
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -126,41 +120,36 @@ class ExpViewHTMLParser(html.parser.HTMLParser):
 
     def _append_class(self):
         self.parsed_classes.append(
-            util.ExpClass(
+            util.ChosenClass(
                 self.current_name,
                 util.TimeTuple(*map(int, self.current_time.split('-'))),
                 self.current_teacher,
                 self.current_place,
                 int(self.current_seat) if self.current_seat else None,
                 None,
-                self.current_report_download_link
+                self.current_report_download_link,
+                False,
+                None
             )
-        )        
+        )
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
 
         if tag == "a" and self.in_exp_line:
             self.current_report_download_link = (
-                "https://wlsy.sau.edu.cn/" + attrs["href"]
+                "https://wlsy.sau.edu.cn/physlab/" + attrs["href"]
             )
 
         if tag == "td" and self.in_exp_line:
             self.parse_stage = self.parse_stage.next_stage()
 
-        if (
-            tag == "tr" and
-            attrs.get("class", self._NULL_SENTINEL) == "STYLE1" and
-            self.in_exp_table
-        ):
+        if tag == "tr" and attrs == {"class": "STYLE1"} and self.in_exp_table:
             self.in_exp_line = True
 
         if (
             tag == "table" and
-            attrs.get("class", self._NULL_SENTINEL) == "layui-table" and
-            attrs.get("lay-size", self._NULL_SENTINEL) == "lg" and
-            # since its value is indeed None, we must use another sentinel
-            attrs.get("lay-even", self._NULL_SENTINEL) is None
+            attrs == {"class": "layui-table", "lay-size": "lg", "lay-even": None}
         ):
             self.in_exp_table = True
 
@@ -206,10 +195,8 @@ class ExpScoreHTMLParseStage(enum.IntEnum):
     def next_stage(self):
         return type(self)(self + 1)
 
-# parser for https://wlsy.sau.edu.cn/physlab/scjcx.php
 class ExpScoreHTMLParser(html.parser.HTMLParser):
-    _NULL_SENTINEL = object()
-
+    "parser for https://wlsy.sau.edu.cn/physlab/scjcx.php"
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -223,13 +210,15 @@ class ExpScoreHTMLParser(html.parser.HTMLParser):
 
     def _append_class(self):
         self.parsed_classes.append(
-            util.ExpClass(
+            util.ChosenClass(
                 self.current_name,
                 None,
                 self.current_teacher,
                 None,
                 None,
                 int(self.current_score) if self.current_score else None,
+                None,
+                False,
                 None
             )
         )
@@ -240,20 +229,17 @@ class ExpScoreHTMLParser(html.parser.HTMLParser):
         if tag == "td" and self.in_exp_line:
             self.parse_stage = self.parse_stage.next_stage()
 
-        if (
-            tag == "tr" and
-            attrs.get("class", self._NULL_SENTINEL) == "STYLE1" and
-            self.in_exp_table
-        ):
+        if tag == "tr" and attrs == {"class": "STYLE1"} and self.in_exp_table:
             self.in_exp_line = True
 
         if (
             tag == "table" and
-            attrs.get("width", self._NULL_SENTINEL) == "95%" and
-            attrs.get("class", self._NULL_SENTINEL) == "layui-table" and
-            attrs.get("lay-size", self._NULL_SENTINEL) == "lg" and
-            # since its value is indeed None, we must use another sentinel
-            attrs.get("lay-even", self._NULL_SENTINEL) is None
+            attrs == {
+                "width": "95%",
+                "class": "layui-table",
+                "lay-size": "lg",
+                "lay-even": None
+            }
         ):
             self.in_exp_table = True
 
@@ -264,7 +250,7 @@ class ExpScoreHTMLParser(html.parser.HTMLParser):
         if tag == "tr" and self.in_exp_line:
             self.in_exp_line = False
             self.parse_stage = ExpScoreHTMLParseStage.NONE
-            
+
             self._append_class()
             self.current_name = ""
             self.current_teacher = ""
@@ -280,3 +266,148 @@ class ExpScoreHTMLParser(html.parser.HTMLParser):
 
             case ExpScoreHTMLParseStage.SCORE:
                 self.current_score += data.strip()
+
+class ExpCancelHTMLParseStage(enum.IntEnum):
+    NONE = enum.auto()
+    NAME = enum.auto()
+    TIME = enum.auto()
+
+    def next_stage(self):
+        return type(self)(self + 1)
+
+class ExpCancelHTMLParser(html.parser.HTMLParser):
+    "parser for https://wlsy.sau.edu.cn/physlab/stuqxyy.php"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.cancel_times = 0
+        self.current_name = ""
+        self.current_time = ""
+        self.current_post_id = 0
+        self.passed_pre_cancel_times_tag = False
+        self.passed_cancel_times = False
+        self.in_cancel_exp_item = False
+        self.in_cancel_exp_inner_item = False
+        self.next_should_parse_item = False
+        self.parse_stage = ExpCancelHTMLParseStage.NONE
+        self.parsed_classes = []
+
+    def _append_class(self):
+        self.parsed_classes.append(
+            util.ChosenClass(
+                self.current_name,
+                util.TimeTuple(*map(int, self.current_time.split(' -'))),
+                None,
+                None,
+                None,
+                None,
+                None,
+                True,
+                self.current_post_id
+            )
+        )
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+
+        if (
+            tag == "span" and
+            attrs == {"style": "font-weight: bold"} and
+            self.in_cancel_exp_inner_item
+        ):
+            self.next_should_parse_item = True
+
+        if (
+            tag == "input" and
+            attrs.get("type", None) == "radio" and
+            attrs.get("name", None) == "sy_qx" and
+            self.in_cancel_exp_item
+        ):
+            self.current_post_id = int(attrs["value"])
+
+        if (
+            tag == "div" and
+            attrs == {
+                "class": "layui-input-block",
+                "style": "margin-left: 0; padding: 10px 0 0 30px;"
+            } and
+            self.in_cancel_exp_item
+        ):
+            self.in_cancel_exp_inner_item = True
+
+        if tag == "div" and attrs == {"class": "experiment-item"}:
+            self.in_cancel_exp_item = True
+
+    def handle_endtag(self, tag):
+        if tag == "span" and self.next_should_parse_item:
+            self.parse_stage = self.parse_stage.next_stage()
+            self.next_should_parse_item = False
+
+        if tag == "strong" and not self.passed_cancel_times:
+            self.passed_pre_cancel_times_tag = True
+
+        if tag == "div" and self.in_cancel_exp_inner_item:
+            self.in_cancel_exp_inner_item = False
+
+        if tag == "div" and self.in_cancel_exp_item:
+            self.in_cancel_exp_item = False
+            self._append_class()
+
+    def handle_data(self, data):
+        if self.passed_pre_cancel_times_tag and not self.passed_cancel_times:
+            self.cancel_times = int(data[-1])
+            self.passed_cancel_times = True
+            return
+
+        if not self.next_should_parse_item:
+            match self.parse_stage:
+                case ExpCancelHTMLParseStage.NAME:
+                    self.current_name += data.strip()
+
+                case ExpCancelHTMLParseStage.TIME:
+                    self.current_time += data.strip()
+
+class ExpSelectResultHTMLParser(html.parser.HTMLParser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.test_next_is_p_tag = False
+        self.next_is_notif_data = False
+        self.next_is_script_data = False
+        self.notif_data = ""
+        self.success = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "p" and self.test_next_is_p_tag:
+            self.test_next_is_p_tag = False
+            self.next_is_notif_data = True
+
+        if tag == "script":
+            self.next_is_script_data = True
+
+    def handle_endtag(self, tag):
+        if tag == "script":
+            self.next_is_script_data = False
+
+    def handle_data(self, data):
+        if (
+            self.next_is_script_data and
+            "                    layer.msg('" in data and
+            "',{icon:" in data and
+            "});" in data
+        ):
+            # XXX there're no much chance to try all the possible situations,
+            # XXX so these are just guesses
+            # XXX I'll refactor them as I gather more data
+
+            if "icon:2" in data:
+                self.success = False
+            elif "icon:1" in data:
+                self.success = True
+
+        if self.next_is_notif_data:
+            self.notif_data = data
+            self.next_is_notif_data = False
+
+        if " \xA0\xA0\xA0\xA0实验指导教师：" in data:
+            self.test_next_is_p_tag = True

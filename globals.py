@@ -1,4 +1,3 @@
-import http.cookiejar
 import tkinter
 import tkinter.messagebox
 import urllib.request
@@ -11,10 +10,10 @@ def exit_exec():
 
     root.destroy()
 
+items_pre_page = 3
 logon_user = ""
-cookiejar = http.cookiejar.CookieJar()
-opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
-
+opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+root = tkinter.Tk()
 login_callback = util.CallbackCaller()
 logout_callback = util.CallbackCaller()
 exit_func = util.CallbackCaller()
@@ -22,7 +21,6 @@ login_activate = util.CallbackCaller()
 nav_activate = util.CallbackCaller()
 select_class_activate = util.CallbackCaller()
 view_class_activate = util.CallbackCaller()
-
-root = tkinter.Tk()
+timetable_done = util.CallbackCaller()
 
 exit_func.add(exit_exec)

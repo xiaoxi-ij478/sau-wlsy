@@ -13,41 +13,61 @@ def login(*args):
     with util.HoldWindowContext(login_toplevel):
         notify_info.set("")
 
-        reply = globals_module.opener.open(
-            "https://wlsy.sau.edu.cn/note.php",
-            urllib.parse.urlencode({
-                "stu_id": username.get(),
-                "stupwd": password.get(),
-                "Submit": "确认提交"
-            }).encode()
-        ).read().decode()
+        reply = io.TextIOWrapper(
+            globals_module.opener.open(
+                "https://wlsy.sau.edu.cn/note.php",
+                urllib.parse.urlencode({
+                    "stu_id": username.get(),
+                    "stupwd": password.get(),
+                    "Submit": "确认提交"
+                }).encode()
+            )
+        )
 
-        if "学号错误，请重新输入！" in reply:
-            notify_info.set("学号错误")
-            return
+        for line in reply:
+            if "学号错误，请重新输入！" in reply:
+                notify_info.set("学号错误")
+                return
 
-        if "用户密码错误，请重新登录！！！" in reply:
-            notify_info.set("密码错误")
-            return
+            if "用户密码错误，请重新登录！！！" in reply:
+                notify_info.set("密码错误")
+                return
 
-        page_iter = iter(
-            io.TextIOWrapper(
-                globals_module.opener.open("https://wlsy.sau.edu.cn/physlab/s6.php")
+        page = io.TextIOWrapper(
+            globals_module.opener.open(
+                "https://wlsy.sau.edu.cn/physlab/s6.php"
             )
         )
         real_username = username.get()
-        while True:
-            try:
-                if "姓名：" in next(page_iter):
-                    real_username = next(page_iter).replace("<td>", "").replace("</td>", "").strip()
-                    break
+        next_is_real_username = False
 
-            except StopIteration:
+        for line in page:
+            if next_is_real_username:
+                real_username = line.replace("<td>", "").replace("</td>", "").strip()
                 break
+
+            if "姓名：" in line:
+                next_is_real_username = True
+                continue
 
         globals_module.logon_user = real_username
         login_toplevel.wm_withdraw()
         globals_module.login_callback()
+
+def load_password():
+    with contextlib.suppress(FileNotFoundError, PermissionError, OSError):
+        with open(os.path.join(os.path.expanduser("~"), ".wlsyrc")) as f:
+            username.set(f.readline().strip())
+            password.set(f.readline().strip())
+
+def save_password():
+    if not save_password_var.get():
+        return
+
+    with contextlib.suppress(FileNotFoundError, PermissionError, OSError):
+        with open(os.path.join(os.path.expanduser("~"), ".wlsyrc"), "w") as f:
+            print(username.get(), file=f)
+            print(password.get(), file=f)
 
 # well, why not use root?
 login_toplevel = globals_module.root
@@ -59,7 +79,12 @@ login_menu = tkinter.Menu(login_toplevel, tearoff=False)
 login_menu.add_command(label="退出", command=globals_module.exit_func)
 login_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
 
-login_toplevel.configure(menu=login_menu)
+title_label = tkinter.ttk.Label(
+    login_toplevel,
+    text="登录",
+    anchor=tkinter.CENTER,
+    font=tkinter.font.Font(size=16)
+)
 
 username = tkinter.StringVar(login_toplevel)
 username_label = tkinter.ttk.Label(login_toplevel, text="学号")
@@ -69,10 +94,12 @@ password = tkinter.StringVar(login_toplevel)
 password_label = tkinter.ttk.Label(login_toplevel, text="密码")
 password_input = tkinter.ttk.Entry(login_toplevel, textvariable=password, show='*')
 
-with contextlib.suppress(FileNotFoundError, PermissionError, OSError):
-    with open(os.path.join(os.path.expanduser("~"), ".wlsyrc")) as f:
-        username.set(f.readline().strip())
-        password.set(f.readline().strip())
+save_password_var = tkinter.BooleanVar(login_toplevel)
+save_password_checkbox = tkinter.ttk.Checkbutton(
+    login_toplevel,
+    text="保存密码",
+    variable=save_password_var
+)
 
 notify_info = tkinter.StringVar(login_toplevel)
 notify_label = tkinter.ttk.Label(
@@ -88,15 +115,49 @@ login_button = tkinter.ttk.Button(
     default=tkinter.ACTIVE
 )
 
-username_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10)
-username_input.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-password_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10)
-password_input.grid(row=1, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-notify_label.grid(row=2, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
-login_button.grid(row=3, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+login_toplevel.configure(menu=login_menu)
+
+title_label.grid(
+    row=0,
+    column=0,
+    columnspan=2,
+    sticky=tkinter.NSEW,
+    padx=10,
+    pady=10
+)
+username_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10)
+username_input.grid(row=1, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
+password_label.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10)
+password_input.grid(row=2, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
+save_password_checkbox.grid(
+    row=3,
+    column=0,
+    columnspan=2,
+    sticky=tkinter.NSEW,
+    padx=10,
+    pady=10
+)
+notify_label.grid(
+    row=4,
+    column=0,
+    columnspan=2,
+    sticky=tkinter.NSEW,
+    padx=10,
+    pady=10
+)
+login_button.grid(
+    row=5,
+    column=0,
+    columnspan=2,
+    sticky=tkinter.NSEW,
+    padx=10,
+    pady=10
+)
 login_toplevel.columnconfigure(tkinter.ALL, weight=1)
 login_toplevel.rowconfigure(tkinter.ALL, weight=1)
 
 login_toplevel.bind("<Return>", login)
+load_password()
 
+globals_module.login_callback.add(save_password)
 globals_module.login_activate.add(login_toplevel.wm_deiconify)

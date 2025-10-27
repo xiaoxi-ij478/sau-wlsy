@@ -32,7 +32,12 @@ nav_menu = tkinter.Menu(nav_toplevel, tearoff=False)
 nav_menu.add_command(label="退出", command=globals_module.exit_func)
 nav_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
 
-nav_toplevel.configure(menu=nav_menu)
+title_label = tkinter.ttk.Label(
+    nav_toplevel,
+    text="导航",
+    anchor=tkinter.CENTER,
+    font=tkinter.font.Font(size=16)
+)
 
 login_label_str = tkinter.StringVar(nav_toplevel, "已登录为: ")
 login_label = tkinter.ttk.Label(
@@ -45,10 +50,13 @@ select_class_button = tkinter.ttk.Button(nav_toplevel, text="选课", command=se
 view_class_button = tkinter.ttk.Button(nav_toplevel, text="查看课程", command=view_class_activate)
 logout_button = tkinter.ttk.Button(nav_toplevel, text="登出", command=logout_activate)
 
-login_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-select_class_button.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-view_class_button.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-logout_button.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+nav_toplevel.configure(menu=nav_menu)
+
+title_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+login_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+select_class_button.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+view_class_button.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+logout_button.grid(row=4, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 
 nav_toplevel.rowconfigure(tkinter.ALL, weight=1)
 nav_toplevel.columnconfigure(tkinter.ALL, weight=1)

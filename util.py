@@ -1,4 +1,3 @@
-import contextlib
 import dataclasses
 
 class CallbackCaller:
@@ -12,8 +11,8 @@ class CallbackCaller:
     def add(self, callback):
         self.callbacks.append(callback)
 
-# a context manager to get rid of busy_hold() / busy_forget() pattern
 class HoldWindowContext:
+    "a context manager to get rid of busy_hold() / busy_forget() pattern"
     def __init__(self, window):
         self.window = window
 
@@ -37,26 +36,16 @@ class ExpClass:
     time: TimeTuple
     teacher: str
     place: str | None
-    seat_num: int | None
-    score: int | None
-    report_download_link: str | None
 
 @dataclasses.dataclass
 class AvailableClass(ExpClass):
-    exp_post_id: int
+    post_id: int
     is_available: bool = dataclasses.field(default=True, init=False)
 
-# only used for merging results from ExpViewHTMLParser and ExpScoreHTMLParser
-def merge_score_only_expclass(score_only, real):
-    assert score_only.name == real.name
-    assert score_only.teacher == real.teacher
-
-    return ExpClass(
-        score_only.name,
-        real.time,
-        score_only.teacher,
-        real.place,
-        real.seat_num,
-        score_only.score,
-        real.report_download_link
-    )
+@dataclasses.dataclass
+class ChosenClass(ExpClass):
+    seat_num: int | None
+    score: int | None
+    report_download_link: str | None
+    can_cancel: bool
+    post_id: int | None
