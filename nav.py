@@ -17,9 +17,14 @@ def view_class_activate():
     globals_module.view_class_activate()
 
 def logout_activate():
-    if tkinter.messagebox.askquestion("登出", "你确认要登出吗？") != tkinter.messagebox.YES:
+    if tkinter.messagebox.askquestion(
+        "登出",
+        "你确认要登出吗？",
+        master=nav_toplevel
+    ) != tkinter.messagebox.YES:
         return
 
+    globals_module.logout()
     nav_toplevel.wm_withdraw()
     globals_module.login_activate()
 
@@ -30,34 +35,35 @@ nav_toplevel.wm_protocol("WM_DELETE_WINDOW", globals_module.exit_func)
 
 nav_menu = tkinter.Menu(nav_toplevel, tearoff=False)
 nav_menu.add_command(label="退出", command=globals_module.exit_func)
-nav_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
+nav_menu.add_command(
+    label="关于",
+    command=lambda: globals_module.about_activate(nav_toplevel)
+)
+nav_toplevel.configure(menu=nav_menu)
 
 title_label = tkinter.ttk.Label(
     nav_toplevel,
     text="导航",
     anchor=tkinter.CENTER,
-    font=tkinter.font.Font(size=16)
+    font=tkinter.font.Font(nav_toplevel, size=16)
 )
 
 login_label_str = tkinter.StringVar(nav_toplevel, "已登录为: ")
 login_label = tkinter.ttk.Label(
     nav_toplevel,
-    textvariable=login_label_str,
-    anchor=tkinter.CENTER
+    anchor=tkinter.CENTER,
+    textvariable=login_label_str
 )
 
 select_class_button = tkinter.ttk.Button(nav_toplevel, text="选课", command=select_class_activate)
 view_class_button = tkinter.ttk.Button(nav_toplevel, text="查看课程", command=view_class_activate)
 logout_button = tkinter.ttk.Button(nav_toplevel, text="登出", command=logout_activate)
 
-nav_toplevel.configure(menu=nav_menu)
-
 title_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 login_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 select_class_button.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 view_class_button.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 logout_button.grid(row=4, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-
 nav_toplevel.rowconfigure(tkinter.ALL, weight=1)
 nav_toplevel.columnconfigure(tkinter.ALL, weight=1)
 

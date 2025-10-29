@@ -44,7 +44,8 @@ def read_class_csv(filename):
                         tkinter.messagebox.showerror(
                             "错误",
                             "课程周数不合法；格式应为 <开始>-<结束>；\n"
-                            f"实际为 '{j}'"
+                            f"实际为 '{j}'",
+                            master=globals_module.root
                         )
                         return
 
@@ -55,7 +56,8 @@ def read_class_csv(filename):
                         tkinter.messagebox.showerror(
                             "错误",
                             "课程周数不合法；开始应小于等于结束；\n"
-                            f"实际为 '{j}'"
+                            f"实际为 '{j}'",
+                            master=globals_module.root
                         )
                         return
 
@@ -74,7 +76,11 @@ def read_class_csv(filename):
                             util.TimeTuple(int(i[1]), int(i[2]), week)
                         )
 
-    tkinter.messagebox.showinfo("加载完成", "课程表加载完成")
+    tkinter.messagebox.showinfo(
+        "加载完成",
+        "课程表加载完成",
+        master=globals_module.root
+    )
     globals_module.timetable_done()
 
 def filter_refused_times(aclass):

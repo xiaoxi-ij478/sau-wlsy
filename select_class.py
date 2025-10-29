@@ -79,21 +79,15 @@ class TkAvailableClass(util.AvailableClass):
 
         self.name_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
         self.info_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-        self.commit_button.grid(
-            row=0,
-            column=1,
-            rowspan=2,
-            sticky=tkinter.EW,
-            padx=10,
-            pady=10
-        )
+        self.commit_button.grid(row=0, column=1, rowspan=2, sticky=tkinter.EW, padx=10, pady=10)
         frame.rowconfigure(tkinter.ALL, weight=1)
         frame.columnconfigure(tkinter.ALL, weight=1)
 
     def commit_select(self):
         if tkinter.messagebox.askquestion(
             "选课确认",
-            f'确认选择 "{self.teacher}" 的 "{self.name}" 课程？'
+            f'确认选择 "{self.teacher}" 的 "{self.name}" 课程？',
+            master=select_class_toplevel
         ) != tkinter.YES:
             return
 
@@ -114,13 +108,15 @@ class TkAvailableClass(util.AvailableClass):
         if parser.success:
             tkinter.messagebox.showinfo(
                 "选课成功",
-                f'课程 "{self.name}" 已成功选择。'
+                f'课程 "{self.name}" 已成功选择。',
+                master=select_class_toplevel
             )
         else:
             tkinter.messagebox.showerror(
                 "选课失败",
                 f'课程 "{self.name}" 选择失败。\n'
-                f"（服务端提示：{parser.notif_data}）"
+                f"（服务端提示：{parser.notif_data}）",
+                master=select_class_toplevel
             )
 
 
@@ -331,13 +327,17 @@ select_class_toplevel.wm_protocol("WM_DELETE_WINDOW", globals_module.exit_func)
 
 select_class_menu = tkinter.Menu(select_class_toplevel, tearoff=False)
 select_class_menu.add_command(label="退出", command=globals_module.exit_func)
-select_class_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
+select_class_menu.add_command(
+    label="关于",
+    command=lambda: globals_module.about_activate(select_class_toplevel)
+)
+select_class_toplevel.configure(menu=select_class_menu)
 
 title_label = tkinter.ttk.Label(
     select_class_toplevel,
     text="选课",
     anchor=tkinter.CENTER,
-    font=tkinter.font.Font(size=16)
+    font=tkinter.font.Font(select_class_toplevel, size=16)
 )
 
 filter_frame = tkinter.ttk.Frame(select_class_toplevel)
@@ -354,7 +354,10 @@ filter_class_button = tkinter.ttk.Button(
 )
 
 filter_teacher = tkinter.StringVar(filter_frame)
-filter_teacher_label = tkinter.ttk.Label(filter_frame, text="输入你想要的老师，以逗号分隔")
+filter_teacher_label = tkinter.ttk.Label(
+    filter_frame,
+    text="输入你想要的老师，以逗号分隔"
+)
 filter_teacher_entry = tkinter.ttk.Entry(filter_frame, textvariable=filter_teacher)
 
 filter_not_teacher = tkinter.StringVar(filter_frame)
@@ -415,8 +418,6 @@ back_button = tkinter.ttk.Button(
     text="返回",
     command=back
 )
-
-select_class_toplevel.configure(menu=select_class_menu)
 
 title_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_class_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)

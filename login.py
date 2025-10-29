@@ -25,11 +25,11 @@ def login(*args):
         )
 
         for line in reply:
-            if "学号错误，请重新输入！" in reply:
+            if "学号错误，请重新输入！" in line:
                 notify_info.set("学号错误")
                 return
 
-            if "用户密码错误，请重新登录！！！" in reply:
+            if "用户密码错误，请重新登录！！！" in line:
                 notify_info.set("密码错误")
                 return
 
@@ -77,13 +77,16 @@ login_toplevel.wm_protocol("WM_DELETE_WINDOW", globals_module.exit_func)
 
 login_menu = tkinter.Menu(login_toplevel, tearoff=False)
 login_menu.add_command(label="退出", command=globals_module.exit_func)
-login_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
+login_menu.add_command(
+    label="关于",
+    command=lambda: globals_module.about_activate(login_toplevel)
+)
 
 title_label = tkinter.ttk.Label(
     login_toplevel,
     text="登录",
     anchor=tkinter.CENTER,
-    font=tkinter.font.Font(size=16)
+    font=tkinter.font.Font(login_toplevel, size=16)
 )
 
 username = tkinter.StringVar(login_toplevel)
@@ -117,42 +120,14 @@ login_button = tkinter.ttk.Button(
 
 login_toplevel.configure(menu=login_menu)
 
-title_label.grid(
-    row=0,
-    column=0,
-    columnspan=2,
-    sticky=tkinter.NSEW,
-    padx=10,
-    pady=10
-)
+title_label.grid(row=0, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 username_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10)
 username_input.grid(row=1, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 password_label.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10)
 password_input.grid(row=2, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-save_password_checkbox.grid(
-    row=3,
-    column=0,
-    columnspan=2,
-    sticky=tkinter.NSEW,
-    padx=10,
-    pady=10
-)
-notify_label.grid(
-    row=4,
-    column=0,
-    columnspan=2,
-    sticky=tkinter.NSEW,
-    padx=10,
-    pady=10
-)
-login_button.grid(
-    row=5,
-    column=0,
-    columnspan=2,
-    sticky=tkinter.NSEW,
-    padx=10,
-    pady=10
-)
+save_password_checkbox.grid(row=3, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+notify_label.grid(row=4, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
+login_button.grid(row=5, column=0, columnspan=2, sticky=tkinter.NSEW, padx=10, pady=10)
 login_toplevel.columnconfigure(tkinter.ALL, weight=1)
 login_toplevel.rowconfigure(tkinter.ALL, weight=1)
 

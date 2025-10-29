@@ -17,22 +17,28 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
         self.in_name_tag = False
         self.in_exp_data_tag = False
         self.current_name = ""
-        self.current_time = None
-        self.current_teacher = ""
-        self.current_place = ""
+        self.pending_data = ""
         self.current_post_id = 0
         self.parsed_classes = []
 
     def _append_class(self):
+        l = [i.strip() for i in self.pending_data.split('\xA0') if i.strip()]
+        current_teacher = l[0].replace("教师：", '')
+        current_time = util.TimeTuple(
+            *map(int, l[1].replace("时间：", '').split(' -'))
+        )
+        current_place = l[2].replace("地点：", '')
+
         self.parsed_classes.append(
             util.AvailableClass(
                 self.current_name,
-                self.current_time,
-                self.current_teacher,
-                self.current_place,
+                current_time,
+                current_teacher,
+                current_place,
                 self.current_post_id
             )
         )
+        self.pending_data = ""
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -79,15 +85,8 @@ class ExpSelectPageHTMLParser(html.parser.HTMLParser):
         if self.in_name_tag:
             self.current_name = data
 
-        if self.passed_name_tag and not self.parsed_extra_info:
-            self.parsed_extra_info = True
-
-            l = [i.strip() for i in data.split('\xA0') if i.strip()]
-            self.current_teacher = l[0].replace("教师：", '')
-            self.current_time = util.TimeTuple(
-                *map(int, l[1].replace("时间：", '').split(' -'))
-            )
-            self.current_place = l[2].replace("地点：", '')
+        if self.passed_name_tag:
+            self.pending_data += data
 
 class ExpViewHTMLParseStage(enum.IntEnum):
     NONE = enum.auto()

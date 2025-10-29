@@ -115,6 +115,7 @@ class TkChosenClass(util.ChosenClass):
             )
 
             fp = tkinter.filedialog.asksaveasfile(
+                master=view_class_toplevel,
                 mode="wb",
                 title="选择报告保存位置",
                 initialfile=default_filename,
@@ -134,12 +135,17 @@ class TkChosenClass(util.ChosenClass):
 
             _internal_download_func()
 
-            tkinter.messagebox.showinfo("报告下载完成", f'报告已下载到 "{fp.name}"。')
+            tkinter.messagebox.showinfo(
+                "报告下载完成",
+                f'报告已下载到 "{fp.name}"。',
+                master=view_class_toplevel
+            )
 
     def remove_class(self):
         if tkinter.messagebox.askquestion(
             "选课确认",
-            f'确认选择 "{self.teacher}" 的 "{self.name}" 课程？'
+            f'确认选择 "{self.teacher}" 的 "{self.name}" 课程？',
+            master=view_class_toplevel
         ) != tkinter.YES:
             return
 
@@ -303,13 +309,17 @@ view_class_toplevel.wm_protocol("WM_DELETE_WINDOW", globals_module.exit_func)
 
 view_class_menu = tkinter.Menu(view_class_toplevel, tearoff=False)
 view_class_menu.add_command(label="退出", command=globals_module.exit_func)
-view_class_menu.add_command(label="关于", command=about.about_toplevel.wm_deiconify)
+view_class_menu.add_command(
+    label="关于",
+    command=lambda: globals_module.about_activate(view_class_toplevel)
+)
+view_class_toplevel.configure(menu=view_class_menu)
 
 title_label = tkinter.ttk.Label(
     view_class_toplevel,
     text="查看课程",
     anchor=tkinter.CENTER,
-    font=tkinter.font.Font(size=16)
+    font=tkinter.font.Font(view_class_toplevel, size=16)
 )
 
 refresh_button = tkinter.ttk.Button(
@@ -349,17 +359,17 @@ back_button = tkinter.ttk.Button(
     command=back
 )
 
-view_class_toplevel.configure(menu=view_class_menu)
-
 title_label.grid(row=0, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
-class_list_frame.grid(row=1, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
+refresh_button.grid(row=1, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
+class_list_frame.grid(row=2, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
 no_class_info_label.grid(row=0, column=0, sticky=tkinter.NSEW)
 no_class_info_label.grid_remove()
-paginator_left_button.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_indicator_label.grid(row=2, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_right_button.grid(row=2, column=2, sticky=tkinter.NSEW, padx=10, pady=10)
+paginator_left_button.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+paginator_indicator_label.grid(row=3, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
+paginator_right_button.grid(row=3, column=2, sticky=tkinter.NSEW, padx=10, pady=10)
+back_button.grid(row=4, column=0, columnspan=3, sticky=tkinter.NSEW, padx=10, pady=10)
 view_class_toplevel.rowconfigure(tkinter.ALL, weight=1)
 view_class_toplevel.columnconfigure(tkinter.ALL, weight=1)
-view_class_toplevel.rowconfigure(1, minsize=300, weight=3) # let class list frame show larger
+view_class_toplevel.rowconfigure(2, minsize=300, weight=3) # let class list frame show larger
 
 globals_module.view_class_activate.add(activate_self)
