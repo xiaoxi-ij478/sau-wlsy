@@ -1,6 +1,7 @@
 import dataclasses
 import io
 import itertools
+import re
 import textwrap
 import tkinter
 import tkinter.filedialog
@@ -142,7 +143,7 @@ def exec_filter():
     filtered_classes = []
 
     for f in filters:
-        for c in filter(lambda i: not f(i), available_classes):
+        for c in itertools.filterfalse(f, available_classes):
             if c not in filtered_classes:
                 filtered_classes.append(c)
 
@@ -165,12 +166,14 @@ def filter_class_pressed():
         class_filters.read_class_csv(filename)
         exec_filter()
 
+comma_spliter = re.compile("[,，]")
+
 def filter_teacher_updated(*args):
     with util.HoldWindowContext(select_class_toplevel):
         class_filters.allowed_teachers = list(
             filter(
-                bool,
-                filter_teacher.get().split(',，')
+                None,
+                comma_spliter.split(filter_teacher.get())
             )
         )
         exec_filter()
@@ -179,8 +182,8 @@ def filter_not_teacher_updated(*args):
     with util.HoldWindowContext(select_class_toplevel):
         class_filters.refused_teachers = list(
             filter(
-                bool,
-                filter_not_teacher.get().split(',，')
+                None,
+                comma_spliter.split(filter_not_teacher.get())
             )
         )
         exec_filter()
@@ -189,8 +192,8 @@ def filter_keyword_updated(*args):
     with util.HoldWindowContext(select_class_toplevel):
         class_filters.filter_keyword = list(
             filter(
-                bool,
-                filter_keyword.get().split(',，')
+                None,
+                comma_spliter.split(filter_keyword.get())
             )
         )
         exec_filter()

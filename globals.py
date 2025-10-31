@@ -18,7 +18,7 @@ def exit_exec():
     logout()
     root.destroy()
 
-items_pre_page = 3
+items_pre_page = 2
 logon_user = ""
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 root = tkinter.Tk()

@@ -80,7 +80,10 @@ class TkChosenClass(util.ChosenClass):
             f"""\
             老师：{self.teacher}
             节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
-            位置：{self.place}\
+            位置：{self.place}
+
+            座位号：{"还没有分配座位" if self.seat_num is None else self.seat_num}
+            分数：{"还没有打分" if self.score is None else self.score}
             """
             )
         )

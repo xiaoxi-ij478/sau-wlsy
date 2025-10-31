@@ -85,10 +85,14 @@ about_license_info_label = tkinter.ttk.Label(
 )
 about_license_text_frame = tkinter.ttk.Frame(about_license_toplevel)
 about_license_text = tkinter.Text(about_license_text_frame)
-about_license_text.insert(
-    tkinter.END,
-    importlib.resources.files(globals_module).joinpath("LICENSE").read_text()
-)
+try:
+    license_text = importlib.resources.files(globals_module).joinpath("LICENSE").read_text()
+except (FileNotFoundError, PermissionError, OSError):
+    license_text = """\
+我没有找到许可证文件！
+虽然我不会因此禁止使用程序，但你最好在重新分发程序时携带许可证文件。
+"""
+about_license_text.insert(tkinter.END, license_text)
 about_license_text.configure(state=tkinter.DISABLED)
 about_license_text_scrollbar = tkinter.ttk.Scrollbar(about_license_text_frame)
 about_license_close = tkinter.ttk.Button(
@@ -104,7 +108,7 @@ about_license_text.grid(row=0, column=0, sticky=tkinter.NSEW)
 about_license_text_scrollbar.grid(row=0, column=1, sticky=tkinter.NSEW)
 about_license_text_frame.rowconfigure(tkinter.ALL, weight=1)
 about_license_text_frame.columnconfigure(tkinter.ALL, weight=1)
-# to ensure scroll bar would not strangely expand
+# to ensure scroll bar would not expand
 about_license_text_frame.columnconfigure(1, weight=0)
 
 about_license_info_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)

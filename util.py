@@ -24,7 +24,7 @@ class HoldWindowContext:
         self.window.busy_forget()
         self.window.update() # ditto
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class TimeTuple:
     week: int
     day_of_week: int
