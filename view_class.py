@@ -76,15 +76,14 @@ class TkChosenClass(util.ChosenClass):
         self.name_label = tkinter.ttk.Label(frame, text=self.name)
         self.info_label = tkinter.ttk.Label(
             frame,
-            text=textwrap.dedent(
-            f"""\
+            text=textwrap.dedent(f"""\
             老师：{self.teacher}
             节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
             位置：{self.place}
 
             座位号：{"还没有分配座位" if self.seat_num is None else self.seat_num}
-            分数：{"还没有打分" if self.score is None else self.score}
-            """
+            分数：{"还没有打分" if self.score is None else self.score}\
+"""
             )
         )
         self.download_report_button = tkinter.ttk.Button(
@@ -133,16 +132,16 @@ class TkChosenClass(util.ChosenClass):
                 if buffer := reply.read(32768):
                     fp.write(buffer)
                     globals_module.root.after(0, _internal_download_func)
+
                 else:
                     fp.close()
+                    tkinter.messagebox.showinfo(
+                        "报告下载完成",
+                        f'报告已下载到 "{fp.name}"。',
+                        master=view_class_toplevel
+                    )
 
             _internal_download_func()
-
-            tkinter.messagebox.showinfo(
-                "报告下载完成",
-                f'报告已下载到 "{fp.name}"。',
-                master=view_class_toplevel
-            )
 
     def remove_class(self):
         if tkinter.messagebox.askquestion(

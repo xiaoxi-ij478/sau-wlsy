@@ -1,15 +1,20 @@
 import tkinter
 import tkinter.messagebox
+import urllib.error
 import urllib.request
 
 from . import util
 
 def logout():
-    opener.open("https://wlsy.sau.edu.cn/physlab/logout.php")
+    with util.HoldWindowContext(root):
+        try:
+            opener.open("https://wlsy.sau.edu.cn/physlab/logout.php", timeout=3)
+        except urllib.error.URLError as e:
+            pass
 
 def exit_exec():
     if tkinter.messagebox.askquestion(
-        "退出",
+        None,
         "你确认要退出吗？",
         master=root
     ) != tkinter.messagebox.YES:
@@ -18,6 +23,7 @@ def exit_exec():
     logout()
     root.destroy()
 
+version = "UNKNOWN"
 items_pre_page = 2
 logon_user = ""
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())

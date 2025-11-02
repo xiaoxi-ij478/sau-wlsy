@@ -65,11 +65,11 @@ class TkAvailableClass(util.AvailableClass):
         self.name_label = tkinter.ttk.Label(frame, text=self.name)
         self.info_label = tkinter.ttk.Label(
             frame,
-            text=textwrap.dedent(
-            f"""\
+            text=textwrap.dedent(f"""\
             老师：{self.teacher}
             节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
-            位置：{self.place}"""
+            位置：{self.place}\
+"""
             )
         )
         self.commit_button = tkinter.ttk.Button(
@@ -86,7 +86,7 @@ class TkAvailableClass(util.AvailableClass):
 
     def commit_select(self):
         if tkinter.messagebox.askquestion(
-            "选课确认",
+            None,
             f'确认选择 "{self.teacher}" 的 "{self.name}" 课程？',
             master=select_class_toplevel
         ) != tkinter.YES:
@@ -108,13 +108,13 @@ class TkAvailableClass(util.AvailableClass):
 
         if parser.success:
             tkinter.messagebox.showinfo(
-                "选课成功",
+                None,
                 f'课程 "{self.name}" 已成功选择。',
                 master=select_class_toplevel
             )
         else:
             tkinter.messagebox.showerror(
-                "选课失败",
+                None,
                 f'课程 "{self.name}" 选择失败。\n'
                 f"（服务端提示：{parser.notif_data}）",
                 master=select_class_toplevel

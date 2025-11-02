@@ -30,6 +30,11 @@ about_title = tkinter.ttk.Label(
     text="沈航物理实验选课程序",
     font=tkinter.font.Font(about_toplevel, size=16)
 )
+about_version = tkinter.ttk.Label(
+    about_toplevel,
+    anchor=tkinter.CENTER,
+    text=f"版本 {globals_module.version}"
+)
 about_author = tkinter.ttk.Label(
     about_toplevel,
     anchor=tkinter.CENTER,
@@ -68,7 +73,6 @@ about_license_toplevel.wm_protocol(
 
 about_license_info_label = tkinter.ttk.Label(
     about_license_toplevel,
-    wraplength=800,
     text=
     "This program is free software: you can redistribute it and/or modify "
     "it under the terms of the GNU General Public License as published by "
@@ -118,11 +122,12 @@ about_license_toplevel.rowconfigure(tkinter.ALL, weight=1)
 about_license_toplevel.columnconfigure(tkinter.ALL, weight=1)
 
 about_title.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-about_author.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-about_homepage.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-about_license_label.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-about_view_full_license.grid(row=4, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-about_close.grid(row=5, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_version.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_author.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_homepage.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_license_label.grid(row=4, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_view_full_license.grid(row=5, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+about_close.grid(row=6, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 about_toplevel.rowconfigure(tkinter.ALL, weight=1)
 about_toplevel.columnconfigure(tkinter.ALL, weight=1)
 

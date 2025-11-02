@@ -56,7 +56,7 @@ def read_class_csv(filename):
                 else:
                     if j.count('-') != 1:
                         tkinter.messagebox.showerror(
-                            "错误",
+                            None,
                             "课程周数不合法；格式应为 <开始>-<结束>；\n"
                             f"实际为 '{j}'",
                             master=globals_module.root
@@ -80,7 +80,7 @@ def read_class_csv(filename):
                     end = int(end) + 1
                     if begin > end:
                         tkinter.messagebox.showerror(
-                            "错误",
+                            None,
                             "课程周数不合法；开始应小于等于结束；\n"
                             f"实际为 '{j}'",
                             master=globals_module.root
@@ -93,7 +93,7 @@ def read_class_csv(filename):
                         )
 
     tkinter.messagebox.showinfo(
-        "加载完成",
+        None,
         "课程表加载完成",
         master=globals_module.root
     )
@@ -158,26 +158,27 @@ def read_class_csv(filename):
 ##
 
 def filter_refused_times(aclass):
-    if "4学时" in aclass.name:
+    if aclass.name.endswith("4学时"):
         # 4 time mapping:
         # 1, 2 -> 1
         # 3, 4 -> 2
         # 5, 6, 7, 8 -> 3
-        for t in ((1, 2), (3, 4), (5, 6, 7, 8)):
-            if aclass.time.class_time in t:
+        for t, et in (
+            (1, (1, 2)),
+            (2, (3, 4)),
+            (3, (5, 6, 7, 8))
+        ):
+            if aclass.time.class_time == t:
                 exact_time = [
                     util.TimeTuple(
                         aclass.time.week,
                         aclass.time.day_of_week,
                         i
-                    ) for i in t
+                    ) for i in et
                 ]
                 break
 
-        return (
-            all(i not in refused_times for i in exact_time)
-            if refused_times else True
-        )
+        return all(i not in refused_times for i in exact_time)
 
     else:
         return aclass.time not in refused_times if refused_times else True

@@ -295,7 +295,9 @@ class ExpCancelHTMLParser(html.parser.HTMLParser):
         self.parsed_classes.append(
             util.ChosenClass(
                 self.current_name,
-                util.TimeTuple(*map(int, self.current_time.split(' -'))),
+                util.TimeTuple(
+                    *map(int, self.current_time.replace(' ', '').split('-'))
+                ),
                 None,
                 None,
                 None,
