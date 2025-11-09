@@ -186,14 +186,14 @@ def reload():
         parser2 = html_parsers.ExpCancelHTMLParser()
         parser3 = html_parsers.ExpScoreHTMLParser()
 
-        while buffer := reply1.read(1024):
-            parser1.feed(buffer)
+        for line in reply1:
+            parser1.feed(line)
 
-        while buffer := reply2.read(1024):
-            parser2.feed(buffer)
+        for line in reply2:
+            parser2.feed(line)
 
-        while buffer := reply3.read(1024):
-            parser3.feed(buffer)
+        for line in reply3:
+            parser3.feed(line)
 
         page_frames.clear()
         all_classes.clear()

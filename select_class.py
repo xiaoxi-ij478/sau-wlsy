@@ -103,8 +103,8 @@ class TkAvailableClass(util.AvailableClass):
         )
 
         parser = html_parsers.ExpSelectResultHTMLParser()
-        while buffer := reply.read(1024):
-            parser.feed(buffer)
+        for line in reply:
+            parser.feed(line)
 
         if parser.success:
             tkinter.messagebox.showinfo(
@@ -211,8 +211,8 @@ def reload():
             )
         )
         parser = html_parsers.ExpSelectPageHTMLParser()
-        while buffer := reply.read(1024):
-            parser.feed(buffer)
+        for line in reply:
+            parser.feed(line)
 
         page_frames.clear()
         available_classes.clear()
