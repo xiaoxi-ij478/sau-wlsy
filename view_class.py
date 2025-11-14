@@ -77,14 +77,13 @@ class TkChosenClass(util.ChosenClass):
         self.info_label = tkinter.ttk.Label(
             frame,
             text=textwrap.dedent(f"""\
-            老师：{self.teacher}
-            节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
-            位置：{self.place}
+                老师：{self.teacher}
+                节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
+                位置：{self.place}
 
-            座位号：{"还没有分配座位" if self.seat_num is None else self.seat_num}
-            分数：{"还没有打分" if self.score is None else self.score}\
-"""
-            )
+                座位号：{"还没有分配座位" if self.seat_num is None else self.seat_num}
+                分数：{"还没有打分" if self.score is None else self.score}
+            """)
         )
         self.download_report_button = tkinter.ttk.Button(
             frame,
@@ -153,7 +152,7 @@ class TkChosenClass(util.ChosenClass):
 
         reply = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/stuqxyy.php",
+                f"{globals_module.WLSY_HOST}/physlab/stuqxyy.php",
                 urllib.parse.urlencode({"sy_qx": self.post_id}).encode()
             )
         )
@@ -169,17 +168,17 @@ def reload():
 
         reply1 = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/stuyycx.php"
+                f"{globals_module.WLSY_HOST}/physlab/stuyycx.php"
             )
         )
         reply2 = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/stuqxyy.php"
+                f"{globals_module.WLSY_HOST}/physlab/stuqxyy.php"
             )
         )
         reply3 = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/scjcx.php"
+                f"{globals_module.WLSY_HOST}/physlab/scjcx.php"
             )
         )
         parser1 = html_parsers.ExpViewHTMLParser()
@@ -221,13 +220,13 @@ def reload():
             class_list_frame.columnconfigure(tkinter.ALL, weight=1)
             return
 
-        a, b = divmod(len(tmp_all_classes), globals_module.items_pre_page)
+        a, b = divmod(len(tmp_all_classes), globals_module.ITEMS_PRE_PAGE)
         current_page = 1
         total_pages = a + bool(b)
 
         for it in itertools.batched(
             tmp_all_classes,
-            globals_module.items_pre_page
+            globals_module.ITEMS_PRE_PAGE
         ):
             internal_class_frame = tkinter.ttk.Frame(class_list_frame)
             page_frames.append(internal_class_frame)

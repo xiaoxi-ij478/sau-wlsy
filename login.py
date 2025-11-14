@@ -15,7 +15,7 @@ def login(*args):
 
         reply = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/note.php",
+                f"{globals_module.WLSY_HOST}/note.php",
                 urllib.parse.urlencode({
                     "stu_id": username.get(),
                     "stupwd": password.get(),
@@ -35,7 +35,7 @@ def login(*args):
 
         page = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/s6.php"
+                f"{globals_module.WLSY_HOST}/physlab/s6.php"
             )
         )
         real_username = username.get()

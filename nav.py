@@ -6,6 +6,7 @@ from . import about
 from . import globals as globals_module
 
 def logon_callback():
+    nav_toplevel.wm_deiconify()
     login_label_str.set(f"已登录为: {globals_module.logon_user}")
 
 def select_class_activate():
@@ -68,5 +69,4 @@ nav_toplevel.rowconfigure(tkinter.ALL, weight=1)
 nav_toplevel.columnconfigure(tkinter.ALL, weight=1)
 
 globals_module.nav_activate.add(nav_toplevel.wm_deiconify)
-globals_module.login_callback.add(nav_toplevel.wm_deiconify)
 globals_module.login_callback.add(logon_callback)

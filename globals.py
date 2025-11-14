@@ -8,7 +8,7 @@ from . import util
 def logout():
     with util.HoldWindowContext(root):
         try:
-            opener.open("https://wlsy.sau.edu.cn/physlab/logout.php", timeout=3)
+            opener.open(f"{WLSY_HOST}/physlab/logout.php", timeout=3)
         except urllib.error.URLError as e:
             pass
 
@@ -21,10 +21,12 @@ def exit_exec():
         return
 
     logout()
-    root.destroy()
+    root.quit()
 
-version = "UNKNOWN"
-items_pre_page = 2
+WLSY_HOST = "https://wlsy.sau.edu.cn"
+VERSION = "UNKNOWN"
+ITEMS_PRE_PAGE = 2
+
 logon_user = ""
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 root = tkinter.Tk()

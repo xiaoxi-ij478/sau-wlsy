@@ -33,7 +33,7 @@ about_title = tkinter.ttk.Label(
 about_version = tkinter.ttk.Label(
     about_toplevel,
     anchor=tkinter.CENTER,
-    text=f"版本 {globals_module.version}"
+    text=f"版本 {globals_module.VERSION}"
 )
 about_author = tkinter.ttk.Label(
     about_toplevel,
@@ -49,8 +49,8 @@ about_license_label = tkinter.ttk.Label(
     about_toplevel,
     anchor=tkinter.CENTER,
     text=textwrap.dedent("""\
-    版权所有 (C) 2025 xiaoxi-ij478
-    本程序以 GPL v3 授权。
+        版权所有 (C) 2025 xiaoxi-ij478
+        本程序以 GPL v3 授权。
     """)
 )
 about_view_full_license = tkinter.ttk.Button(
@@ -73,6 +73,7 @@ about_license_toplevel.wm_protocol(
 
 about_license_info_label = tkinter.ttk.Label(
     about_license_toplevel,
+    wraplength=80,
     text=
     "This program is free software: you can redistribute it and/or modify "
     "it under the terms of the GNU General Public License as published by "
@@ -89,13 +90,15 @@ about_license_info_label = tkinter.ttk.Label(
 )
 about_license_text_frame = tkinter.ttk.Frame(about_license_toplevel)
 about_license_text = tkinter.Text(about_license_text_frame)
+
 try:
     license_text = importlib.resources.files(globals_module).joinpath("LICENSE").read_text()
 except (FileNotFoundError, PermissionError, OSError):
-    license_text = """\
-我没有找到许可证文件！
-虽然我不会因此禁止使用程序，但你最好在重新分发程序时携带许可证文件。
-"""
+    license_text = textwrap.dedent("""
+        我没有找到许可证文件！
+        虽然我不会因此禁止使用程序，但你最好在重新分发程序时携带许可证文件。
+    """)
+
 about_license_text.insert(tkinter.END, license_text)
 about_license_text.configure(state=tkinter.DISABLED)
 about_license_text_scrollbar = tkinter.ttk.Scrollbar(about_license_text_frame)
@@ -112,7 +115,7 @@ about_license_text.grid(row=0, column=0, sticky=tkinter.NSEW)
 about_license_text_scrollbar.grid(row=0, column=1, sticky=tkinter.NSEW)
 about_license_text_frame.rowconfigure(tkinter.ALL, weight=1)
 about_license_text_frame.columnconfigure(tkinter.ALL, weight=1)
-# to ensure scroll bar would not expand
+# ensure scroll bar would not expand
 about_license_text_frame.columnconfigure(1, weight=0)
 
 about_license_info_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
@@ -120,6 +123,8 @@ about_license_text_frame.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pad
 about_license_close.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 about_license_toplevel.rowconfigure(tkinter.ALL, weight=1)
 about_license_toplevel.columnconfigure(tkinter.ALL, weight=1)
+about_license_toplevel.rowconfigure(0, weight=1)
+about_license_toplevel.rowconfigure(2, weight=0)
 
 about_title.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 about_version.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)

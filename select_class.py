@@ -66,11 +66,10 @@ class TkAvailableClass(util.AvailableClass):
         self.info_label = tkinter.ttk.Label(
             frame,
             text=textwrap.dedent(f"""\
-            老师：{self.teacher}
-            节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
-            位置：{self.place}\
-"""
-            )
+                老师：{self.teacher}
+                节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
+                位置：{self.place}
+            """)
         )
         self.commit_button = tkinter.ttk.Button(
             frame,
@@ -94,7 +93,7 @@ class TkAvailableClass(util.AvailableClass):
 
         reply = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/stuyy_test2.php",
+                f"{globals_module.WLSY_HOST}/physlab/stuyy_test2.php",
                 urllib.parse.urlencode({
                     "sy_sy": self.post_id,
                     "submit": "添加"
@@ -207,7 +206,7 @@ def reload():
 
         reply = io.TextIOWrapper(
             globals_module.opener.open(
-                "https://wlsy.sau.edu.cn/physlab/stuyy_test2.php"
+                f"{globals_module.WLSY_HOST}/physlab/stuyy_test2.php"
             )
         )
         parser = html_parsers.ExpSelectPageHTMLParser()
@@ -225,13 +224,13 @@ def reload():
             class_list_frame.columnconfigure(tkinter.ALL, weight=1)
             return
 
-        a, b = divmod(len(parser.parsed_classes), globals_module.items_pre_page)
+        a, b = divmod(len(parser.parsed_classes), globals_module.ITEMS_PRE_PAGE)
         current_page = 1
         total_pages = a + bool(b)
 
         for it in itertools.batched(
             parser.parsed_classes,
-            globals_module.items_pre_page
+            globals_module.ITEMS_PRE_PAGE
         ):
             internal_class_frame = tkinter.ttk.Frame(class_list_frame)
             page_frames.append(internal_class_frame)

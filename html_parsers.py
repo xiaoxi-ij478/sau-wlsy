@@ -1,6 +1,7 @@
 import enum
 import html.parser
 
+from . import globals as globals_module
 from . import util
 
 # all the parsers are very fragile.
@@ -137,7 +138,7 @@ class ExpViewHTMLParser(html.parser.HTMLParser):
 
         if tag == "a" and self.in_exp_line:
             self.current_report_download_link = (
-                "https://wlsy.sau.edu.cn/physlab/" + attrs["href"]
+                f"{globals_module.WLSY_HOST}/physlab/" + attrs["href"]
             )
 
         if tag == "td" and self.in_exp_line:
@@ -376,6 +377,8 @@ class ExpSelectResultHTMLParser(html.parser.HTMLParser):
         self.next_is_notif_data = False
         self.next_is_script_data = False
         self.notif_data = ""
+        # sometimes the html does not contain notification info
+        # so we assume it failed when not notified
         self.success = False
 
     def handle_starttag(self, tag, attrs):
