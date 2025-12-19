@@ -18,7 +18,10 @@ from . import util
 
 @dataclasses.dataclass
 class TkAvailableClass(util.AvailableClass):
-    frame: dataclasses.InitVar[tkinter.ttk.Frame]
+    frame: tkinter.ttk.Frame = dataclasses.field(
+        repr=False,
+        compare=False
+    )
     name_label: tkinter.ttk.Label = dataclasses.field(
         init=False,
         repr=False,
@@ -61,10 +64,10 @@ class TkAvailableClass(util.AvailableClass):
             state=tkinter.NORMAL if val else tkinter.DISABLED
         )
 
-    def __post_init__(self, frame):
-        self.name_label = tkinter.ttk.Label(frame, text=self.name)
+    def __post_init__(self):
+        self.name_label = tkinter.ttk.Label(self.frame, text=self.name)
         self.info_label = tkinter.ttk.Label(
-            frame,
+            self.frame,
             text=textwrap.dedent(f"""\
                 老师：{self.teacher}
                 节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
@@ -72,16 +75,19 @@ class TkAvailableClass(util.AvailableClass):
             """)
         )
         self.commit_button = tkinter.ttk.Button(
-            frame,
+            self.frame,
             text="选择课程",
             command=self.commit_select
         )
+        self.name_label.bind("<ButtonPress>", class_list_canvas_scroll, True)
+        self.info_label.bind("<ButtonPress>", class_list_canvas_scroll, True)
+        self.commit_button.bind("<ButtonPress>", class_list_canvas_scroll, True)
 
         self.name_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
         self.info_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
         self.commit_button.grid(row=0, column=1, rowspan=2, sticky=tkinter.EW, padx=10, pady=10)
-        frame.rowconfigure(tkinter.ALL, weight=1)
-        frame.columnconfigure(tkinter.ALL, weight=1)
+        self.frame.rowconfigure(tkinter.ALL, weight=1)
+        self.frame.columnconfigure(tkinter.ALL, weight=1)
 
     def commit_select(self):
         if tkinter.messagebox.askquestion(
@@ -130,7 +136,7 @@ def set_all_available():
 
 # How to write a filter:
 # def filter_teacher(aclass):
-#     # return True if accept, else return False
+#     # return True if accept, else False
 #     return aclass.teacher == "blabla"
 # add_filter(filter_teacher)
 
@@ -199,10 +205,11 @@ def filter_keyword_updated(*args):
 
 def reload():
     with util.HoldWindowContext(select_class_toplevel):
-        global current_page
-        global total_pages
-
         no_class_info_label.grid_remove()
+        for c in available_classes:
+            c.frame.destroy()
+
+        available_classes.clear()
 
         reply = io.TextIOWrapper(
             globals_module.opener.open(
@@ -213,100 +220,90 @@ def reload():
         for line in reply:
             parser.feed(line)
 
-        page_frames.clear()
-        available_classes.clear()
-        for f in page_frames:
-            f.destroy()
-
         if not parser.parsed_classes:
             no_class_info_label.grid()
             class_list_frame.rowconfigure(tkinter.ALL, weight=1)
             class_list_frame.columnconfigure(tkinter.ALL, weight=1)
+            globals_module.root.after(
+                100,
+                lambda: class_list_canvas.configure(
+                    scrollregion=class_list_canvas.bbox(class_list_frame_canvasid)
+                )
+            )
             return
 
-        a, b = divmod(len(parser.parsed_classes), globals_module.ITEMS_PRE_PAGE)
-        current_page = 1
-        total_pages = a + bool(b)
+        for i, c in enumerate(parser.parsed_classes):
+            in_class_item_frame = tkinter.ttk.Frame(class_list_frame)
+            in_class_item_frame.bind("<ButtonPress>", class_list_canvas_scroll, True)
+            in_class_item_frame.grid(
+                row=i,
+                column=0,
+                sticky=tkinter.NSEW,
+                padx=10,
+                pady=10
+            )
 
-        for it in itertools.batched(
-            parser.parsed_classes,
-            globals_module.ITEMS_PRE_PAGE
-        ):
-            internal_class_frame = tkinter.ttk.Frame(class_list_frame)
-            page_frames.append(internal_class_frame)
-
-            for i, c in enumerate(it):
-                class_item_frame = tkinter.ttk.Frame(internal_class_frame)
-                class_item_frame.grid(
-                    row=i,
-                    column=0,
-                    sticky=tkinter.NSEW,
-                    padx=10,
-                    pady=10
+            available_classes.append(
+                TkAvailableClass(
+                    c.name,
+                    c.time,
+                    c.teacher,
+                    c.place,
+                    c.post_id,
+                    in_class_item_frame
                 )
+            )
 
-                available_classes.append(
-                    TkAvailableClass(
-                        c.name,
-                        c.time,
-                        c.teacher,
-                        c.place,
-                        c.post_id,
-                        class_item_frame
-                    )
-                )
-
-            internal_class_frame.rowconfigure(tkinter.ALL, weight=1)
-            internal_class_frame.columnconfigure(tkinter.ALL, weight=1)
-            internal_class_frame.grid(row=0, column=0, sticky=tkinter.NSEW)
-            internal_class_frame.grid_remove()
-
-        page_frames[0].grid()
         class_list_frame.rowconfigure(tkinter.ALL, weight=1)
         class_list_frame.columnconfigure(tkinter.ALL, weight=1)
-        paginator_indicator.set(f"{current_page} / {total_pages} 页")
+        globals_module.root.after(
+            100,
+            lambda: class_list_canvas.configure(
+                scrollregion=class_list_canvas.bbox(class_list_frame_canvasid)
+            )
+        )
 
-def activate_self():
-    select_class_toplevel.wm_deiconify()
-    reload()
-
-def next_page():
-    global current_page
-    global total_pages
-
-    if current_page >= total_pages:
+def class_list_canvas_scroll(event):
+    # TODO add <MouseWheel> event handling
+    if event.type != tkinter.EventType.ButtonPress:
         return
 
-    page_frames[current_page - 1].grid_remove()
-    page_frames[current_page].grid()
-    current_page += 1
-    paginator_indicator.set(f"{current_page} / {total_pages} 页")
+    scroll_func = (
+        class_list_canvas.xview_scroll
+        if event.state & 1 # Shift
+        else class_list_canvas.yview_scroll
+    )
+    match event.num:
+        case 5: # down
+            scroll_size = 1
+        case 4:
+            scroll_size = -1
+        case _:
+            return
 
-def prev_page():
-    global current_page
-    global total_pages
+    scroll_func(scroll_size, tkinter.UNITS)
 
-    if current_page <= 1:
-        return
-
-    current_page -= 1
-    page_frames[current_page].grid_remove()
-    page_frames[current_page - 1].grid()
-    paginator_indicator.set(f"{current_page} / {total_pages} 页")
+def class_list_canvas_resize(event):
+    pass
+##    class_list_canvas.configure(
+##        scrollregion=class_list_canvas.bbox(class_list_frame_canvasid)
+##    )
 
 def toggle_filters():
     global filters_collapsed
 
     if filters_collapsed:
         filter_frame.grid()
-        title_label.grid(columnspan=1)
         toggle_filter_button_str.set("收起过滤器")
     else:
         filter_frame.grid_remove()
-        title_label.grid(columnspan=2)
         toggle_filter_button_str.set("展开过滤器")
 
     filters_collapsed = not filters_collapsed
+
+def activate_self():
+    select_class_toplevel.wm_deiconify()
+    reload()
 
 def back():
     select_class_toplevel.wm_withdraw()
@@ -316,11 +313,9 @@ def timetable_loaded():
     filter_class_label_str.set("选择课程表来过滤课程（已加载）")
 
 filters_collapsed = False
-current_page = 1
-total_pages = 1
 filters = []
 available_classes = []
-page_frames = []
+classes_frames = []
 
 select_class_toplevel = tkinter.Toplevel(globals_module.root)
 select_class_toplevel.wm_title("选课 - 物理实验选课系统")
@@ -365,8 +360,10 @@ filter_teacher_entry = tkinter.ttk.Entry(filter_frame, textvariable=filter_teach
 filter_not_teacher = tkinter.StringVar(filter_frame)
 filter_not_teacher_label = tkinter.ttk.Label(
     filter_frame,
-    text="输入你不想要的老师，以逗号分隔\n"
-         "（可同时与想要的老师一起使用）"
+    text=textwrap.dedent("""\
+        输入你不想要的老师，以逗号分隔
+        （可同时与想要的老师一起使用）
+    """)
 )
 filter_not_teacher_entry = tkinter.ttk.Entry(
     filter_frame,
@@ -389,30 +386,40 @@ toggle_filter_button = tkinter.ttk.Button(
 
 refresh_button = tkinter.ttk.Button(select_class_toplevel, text="刷新", command=reload)
 
-class_list_frame = tkinter.ttk.Frame(select_class_toplevel)
+class_list_outer_frame = tkinter.ttk.Frame(select_class_toplevel)
+class_list_canvas = tkinter.Canvas(class_list_outer_frame)
+class_list_frame = tkinter.ttk.Frame(class_list_canvas)
+# put the frame in the canvas early
+class_list_frame_canvasid = class_list_canvas.create_window(
+    0, 0,
+    window=class_list_frame,
+    anchor=tkinter.NE
+)
+class_list_canvas.bind("<Configure>", class_list_canvas_resize, True)
+# this is untested because I'm using X11
+class_list_canvas.bind("<MouseWheel>", class_list_canvas_scroll, True)
+class_list_canvas.bind("<ButtonPress>", class_list_canvas_scroll, True)
+class_list_frame.bind("<ButtonPress>", class_list_canvas_scroll, True)
+
+class_list_horizontal_scrollbar = tkinter.ttk.Scrollbar(
+    class_list_outer_frame,
+    orient=tkinter.HORIZONTAL,
+    command=class_list_canvas.xview
+)
+class_list_vertical_scrollbar = tkinter.ttk.Scrollbar(
+    class_list_outer_frame,
+    orient=tkinter.VERTICAL,
+    command=class_list_canvas.yview
+)
+class_list_canvas.configure(
+    xscrollcommand=class_list_horizontal_scrollbar.set,
+    yscrollcommand=class_list_vertical_scrollbar.set
+)
 
 no_class_info_label = tkinter.ttk.Label(
     class_list_frame,
     text="当前没有课程",
     anchor=tkinter.CENTER
-)
-
-paginator_frame = tkinter.ttk.Frame(select_class_toplevel)
-paginator_indicator = tkinter.StringVar(paginator_frame, "1 / 1 页")
-paginator_left_button = tkinter.ttk.Button(
-    paginator_frame,
-    text="<",
-    command=prev_page
-)
-paginator_indicator_label = tkinter.ttk.Label(
-    paginator_frame,
-    textvariable=paginator_indicator,
-    anchor=tkinter.CENTER
-)
-paginator_right_button = tkinter.ttk.Button(
-    paginator_frame,
-    text=">",
-    command=next_page
 )
 
 back_button = tkinter.ttk.Button(
@@ -421,7 +428,10 @@ back_button = tkinter.ttk.Button(
     command=back
 )
 
+## toplevel { ##
 title_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+
+## filter_frame { ##
 filter_class_label.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_class_button.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_teacher_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
@@ -430,24 +440,38 @@ filter_not_teacher_label.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pad
 filter_not_teacher_entry.grid(row=2, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_keyword_label.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_keyword_entry.grid(row=3, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
+
 filter_frame.grid(row=2, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 filter_frame.rowconfigure(tkinter.ALL, weight=1, uniform="filter")
 filter_frame.columnconfigure(tkinter.ALL, weight=1)
+## } filter_frame ##
+
 toggle_filter_button.grid(row=3, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 refresh_button.grid(row=4, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-class_list_frame.grid(row=5, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+
+## class_list_outer_frame { ##
+class_list_canvas.grid(row=0, column=0, sticky=tkinter.NSEW)
+class_list_horizontal_scrollbar.grid(row=1, column=0, sticky=tkinter.NSEW)
+class_list_vertical_scrollbar.grid(row=0, column=1, sticky=tkinter.NSEW)
+
+## class_list_frame { ##
 no_class_info_label.grid(row=0, column=0, sticky=tkinter.NSEW)
 no_class_info_label.grid_remove()
-paginator_left_button.grid(row=0, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_indicator_label.grid(row=0, column=1, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_right_button.grid(row=0, column=2, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_frame.grid(row=6, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-back_button.grid(row=7, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
-paginator_frame.rowconfigure(tkinter.ALL, weight=1)
-paginator_frame.columnconfigure(tkinter.ALL, weight=1)
+## } class_list_frame ##
+
+class_list_outer_frame.grid(row=5, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
+class_list_outer_frame.rowconfigure(tkinter.ALL, weight=1)
+class_list_outer_frame.columnconfigure(tkinter.ALL, weight=1)
+class_list_outer_frame.rowconfigure(1, weight=0)
+class_list_outer_frame.columnconfigure(1, weight=0)
+## } class_list_outer_frame ##
+
+back_button.grid(row=6, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
 select_class_toplevel.rowconfigure(tkinter.ALL, weight=1)
 select_class_toplevel.columnconfigure(tkinter.ALL, weight=1)
-select_class_toplevel.rowconfigure(5, minsize=300, weight=3) # let class list frame show larger
+select_class_toplevel.rowconfigure(5, weight=5) # let class list frame show larger
+## } toplevel ##
+
 filter_teacher.trace_add("write", filter_teacher_updated)
 filter_not_teacher.trace_add("write", filter_not_teacher_updated)
 filter_keyword.trace_add("write", filter_keyword_updated)

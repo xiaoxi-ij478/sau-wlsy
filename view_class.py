@@ -50,7 +50,10 @@ def merge_cancel_expclass(cancel, real):
 
 @dataclasses.dataclass
 class TkChosenClass(util.ChosenClass):
-    frame: dataclasses.InitVar[tkinter.ttk.Frame]
+    frame: tkinter.ttk.Frame = dataclasses.field(
+        repr=False,
+        compare=False
+    )
     name_label: tkinter.ttk.Label = dataclasses.field(
         init=False,
         repr=False,
@@ -72,10 +75,10 @@ class TkChosenClass(util.ChosenClass):
         compare=False
     )
 
-    def __post_init__(self, frame):
-        self.name_label = tkinter.ttk.Label(frame, text=self.name)
+    def __post_init__(self):
+        self.name_label = tkinter.ttk.Label(self.frame, text=self.name)
         self.info_label = tkinter.ttk.Label(
-            frame,
+            self.frame,
             text=textwrap.dedent(f"""\
                 老师：{self.teacher}
                 节数：第 {self.time.week} 周星期 {self.time.day_of_week} 第 {self.time.class_time} 节
@@ -86,12 +89,12 @@ class TkChosenClass(util.ChosenClass):
             """)
         )
         self.download_report_button = tkinter.ttk.Button(
-            frame,
+            self.frame,
             text="下载报告",
             command=self.download_report
         )
         self.remove_class_button = tkinter.ttk.Button(
-            frame,
+            self.frame,
             text="退课",
             command=self.remove_class,
             state=tkinter.NORMAL if self.can_cancel else tkinter.DISABLED
@@ -101,8 +104,8 @@ class TkChosenClass(util.ChosenClass):
         self.info_label.grid(row=1, column=0, sticky=tkinter.NSEW, padx=10, pady=10)
         self.download_report_button.grid(row=0, column=1, sticky=tkinter.EW, padx=10, pady=10)
         self.remove_class_button.grid(row=1, column=1, sticky=tkinter.EW, padx=10, pady=10)
-        frame.rowconfigure(tkinter.ALL, weight=1)
-        frame.columnconfigure(tkinter.ALL, weight=1)
+        self.frame.rowconfigure(tkinter.ALL, weight=1)
+        self.frame.columnconfigure(tkinter.ALL, weight=1)
 
     def download_report(self):
         with util.HoldWindowContext(view_class_toplevel):
