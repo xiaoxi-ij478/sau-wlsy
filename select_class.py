@@ -139,12 +139,10 @@ def add_filter(aclass):
 
 def exec_filter():
     set_all_available()
-    filtered_classes = []
+    filtered_classes = set()
 
     for f in filters:
-        for c in itertools.filterfalse(f, available_classes):
-            if c not in filtered_classes:
-                filtered_classes.append(c)
+        filtered_classes.update(itertools.filterfalse(f, available_classes))
 
     for c in filtered_classes:
         c.is_available = False
